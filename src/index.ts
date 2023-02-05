@@ -107,7 +107,8 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
     if (!match) return null;
 
-    const [input, _, type, title] = match; // _ is triple colon
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [input, triplecolon, type, title] = match;
 
     return [input, type, title];
   };
@@ -119,6 +120,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
     if (!match) return;
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [input, type, title] = match;
 
     // console.log({ input, type, title });
