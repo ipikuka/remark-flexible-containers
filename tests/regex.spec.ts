@@ -92,6 +92,7 @@ describe("remark-container", () => {
       }
 
       if (match) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const [_, __, type, title] = match;
 
         expect(type).toBe(fixture.expect?.type);
