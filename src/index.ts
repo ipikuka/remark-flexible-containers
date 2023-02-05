@@ -27,8 +27,6 @@ const DEFAULT_SETTINGS: FlexibleContainerOptions = {
   titleProperties: undefined,
 };
 
-export const REGEX_TRIPLE_COLON = /:::/;
-// export const REGEX_START = /^:::\s*(\w+)\s*(.*[^ ])?/;
 export const REGEX_START = /^(:{3})\s*(\w+)?\s*(.*[^ ])?/;
 export const REGEX_END = /^:::$/;
 
