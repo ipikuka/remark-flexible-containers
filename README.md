@@ -36,7 +36,9 @@ yarn add remark-flexible-containers
 
 ### ::: [type] [title]
 
-Say we have the following file, `example.md`, which consists a flexible container. The **container type** is "warning", specified _after the triple colon_ `:::` and the **container title** is "title". **The container should be closed with line which consists only triple colon `:::` at the end.**. _There must be empty lines before and after the lines with `:::`, in order to parse the markdown properly._
+Say we have the following file, `example.md`, which consists a flexible container. The **container type** is "warning", specified _after the triple colon_ `:::`; and the **container title** is "title". **The container should be closed with the line which consists only triple colon `:::` at the end.**
+
+_There must be empty lines before and after the lines with the triple colon `:::`, in order to parse the markdown properly._
 
 ```markdown
 ::: warning title
@@ -71,7 +73,7 @@ async function main() {
 ```
 
 Now, running `node example.js` yields:\
-(The type is also added as a className into container)
+(The type is also added as a class name into the container)
 
 ```html
 <div class="remark-container warning">
