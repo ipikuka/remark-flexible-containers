@@ -80,7 +80,7 @@ describe("remark-container", () => {
       },
     ];
 
-    fixtures.forEach((fixture, index) => {
+    fixtures.forEach((fixture) => {
       const match = fixture.input.match(REGEX_START);
 
       if (fixture.expect === null) {
