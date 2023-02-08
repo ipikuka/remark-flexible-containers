@@ -98,7 +98,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     };
   };
 
-  const matchParagraph = (node: Paragraph): null | [string, string, string] => {
+  const matchParagraph = (node: Paragraph): null | [string, string] => {
     const firstElement = node.children[0];
 
     if (firstElement.type !== "text") return null;
@@ -110,7 +110,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [input, triplecolon, type, title] = match;
 
-    return [input, type, title];
+    return [type, title];
   };
 
   const visitor: Visitor<Paragraph> = function (node, _, parent) {
@@ -120,15 +120,10 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
     if (!match) return;
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [input, type, title] = match;
-
-    // console.log({ input, type, title });
-
+    const [type, title] = match;
     const { children } = parent;
 
     const openingNode = node;
-    const openingIndex = children.indexOf(openingNode);
 
     const closingNode = findAfter(parent, openingNode, function (node) {
       return (
@@ -138,8 +133,6 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     });
 
     if (!closingNode) return;
-
-    const closingIndex = children.indexOf(closingNode);
 
     const containerChildren = between(parent, openingNode, closingNode);
 
@@ -153,6 +146,8 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
     const containerNode = constructContainer(containerChildren, type ?? "", title ?? "");
 
+    const openingIndex = children.indexOf(openingNode);
+    const closingIndex = children.indexOf(closingNode);
     parent.children.splice(openingIndex, closingIndex - openingIndex + 1, containerNode);
   };
 
