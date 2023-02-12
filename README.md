@@ -15,8 +15,10 @@ This package is a [unified][unified] ([remark][remark]) plugin to add custom con
 
 This plugin is useful if you want to **add a custom container** in markdown, for example, in order to produce a **callout** or **admonition**.
 
-- This plugin can add `container` node, with _custom tag, custom class name and also additional properties_.
-- This plugin can add `title` node inside the container, if the title is provided, with _custom tag, custom class name and also additional properties_.
+- This plugin can add `container` node, with _custom tag name, custom class name and also additional properties_.
+- This plugin can add `title` node inside the container, if the title is provided, with _custom tag name, custom class name and also additional properties_.
+
+This plugin does not support nested containers.
 
 ## Installation
 
@@ -36,9 +38,7 @@ yarn add remark-flexible-containers
 
 ### ::: [type] [title]
 
-Say we have the following file, `example.md`, which consists a flexible container. The **container type** is "warning", specified _after the triple colon_ `:::`; and the **container title** is "title". **The container should be closed with the line which consists only triple colon `:::` at the end.**
-
-_There must be empty lines before and after the lines with the triple colon `:::`, in order to parse the markdown properly._
+Say we have the following file, `example.md`, which consists a flexible container. The **container type** is "warning", specified _after the triple colon_ `:::`; and the **container title** is "title". **Each container should be closed with only triple colon `:::` at the end.**
 
 ```markdown
 ::: warning title
@@ -46,6 +46,18 @@ _There must be empty lines before and after the lines with the triple colon `:::
 My paragraph with **bold text**
 
 :::
+```
+
+**Even, you don't need to put empty lines inside the container.** But, _there must be empty lines before the first line and after the last line of the container, in order to parse the markdown properly._
+
+```markdown
+<!--- here must be empty line --->
+
+::: danger My Title
+My paragraph with **bold text**
+:::
+
+<!--- here must be empty line --->
 ```
 
 And our module, `example.js`, looks as follows:
@@ -138,9 +150,7 @@ It is an option to set additional properties for the `title` node. It is a callb
 
 ```markdown
 ::: info My Title
-
 Some information
-
 :::
 ```
 
@@ -210,9 +220,7 @@ You can use the plugin syntax without providing a type and a title
 
 ```markdown
 :::
-
 Some information
-
 :::
 ```
 
@@ -222,6 +230,28 @@ It will not add a `title` node since it is not provided, and it will also not ad
 <div class="remark-container">
   <p>Some information</p>
 </div>
+```
+
+**The flexible container can contain also html elements and mdx components:**
+
+```markdown
+::: danger My Title
+My name is **talatkuyuk** AKA ipikuka
+this package is _so cool and flexible_
+
+::it does not confuse with double colons::
+
+<mark>marked text</mark>
+<MarkRed>custom marker</MarkRed>
+
+<details>
+  <summary>HTML tag works too</summary>
+  <p>I am working</p>
+</details>
+  
+other paragraph *italic content* and,
+some **bold content** without stress
+:::
 ```
 
 ## Syntax tree
