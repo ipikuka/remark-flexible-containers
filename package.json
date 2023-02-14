@@ -14,6 +14,7 @@
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
   "scripts": {
+    "prebuild": "rimraf dist",
     "build": "npm run build:esm && npm run build:cjs",
     "build:esm": "tsc",
     "build:cjs": "tsc --module commonjs --outDir dist/cjs",
@@ -21,9 +22,8 @@
     "prettier": "prettier --write \"{src,tests,example/src}/**/*.{js,ts}\"",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest --config ./jest.config.cjs",
     "test:file": "NODE_OPTIONS=--experimental-vm-modules jest --config ./jest.config.cjs with_options.spec.ts",
-    "prepare": "npm run build",
-    "prepublishOnly": "npm test && npm run prettier && npm run lint",
-    "prebuild": "rimraf dist"
+    "prepack": "npm run build",
+    "prepublishOnly": "npm test && npm run prettier && npm run lint"
   },
   "files": [
     "dist",
