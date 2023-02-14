@@ -18,7 +18,7 @@
     "build": "npm run build:esm && npm run build:cjs",
     "build:esm": "tsc",
     "build:cjs": "tsc --module commonjs --outDir dist/cjs",
-    "lint": "eslint \"{**/*,*}.{js,ts}\"",
+    "lint": "eslint .",
     "prettier": "prettier --write .",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest --config ./jest.config.cjs",
     "test:file": "NODE_OPTIONS=--experimental-vm-modules jest --config ./jest.config.cjs with_options.spec.ts",
