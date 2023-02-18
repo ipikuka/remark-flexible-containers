@@ -22,7 +22,7 @@ This plugin does not support nested containers.
 
 ## Installation
 
-This package is suitable for ESM and CommonJs module system. In Node.js (version 12.20+, 14.14+, or 16.0+), install with npm:
+This package is suitable for ESM only. In Node.js (version 14.14+, 16.0+), install with npm:
 
 ```bash
 npm install remark-flexible-containers
