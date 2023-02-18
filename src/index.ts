@@ -52,7 +52,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       properties = settings.titleProperties(type.toLowerCase(), title.replace(/\s+/g, " "));
 
       Object.entries(properties).forEach(([k, v]) => {
-        if (typeof v === "string" && !v.length) {
+        if ((typeof v === "string" && v === "") || (Array.isArray(v) && v.length === 0)) {
           properties && (properties[k] = undefined);
         }
       });
@@ -78,7 +78,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       properties = settings.containerProperties(type.toLowerCase(), title.replace(/\s+/g, " "));
 
       Object.entries(properties).forEach(([k, v]) => {
-        if (typeof v === "string" && !v.length) {
+        if ((typeof v === "string" && v === "") || (Array.isArray(v) && v.length === 0)) {
           properties && (properties[k] = undefined);
         }
       });
