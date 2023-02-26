@@ -5,7 +5,7 @@
   "type": "module",
   "exports": "./dist/esm/index.js",
   "main": "./dist/esm/index.js",
-  "types": "./dist/types/index.d.ts",
+  "types": "./dist/esm/index.d.ts",
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "npm run prebuild && tsc",
