@@ -38,25 +38,21 @@ yarn add remark-flexible-containers
 
 ### ::: [type] [title]
 
-Say we have the following file, `example.md`, which consists a flexible container. The **container type** is "warning", specified _after the triple colon_ `:::`; and the **container title** is "title". **Each container should be closed with only triple colon `:::` at the end.**
+Say we have the following file, `example.md`, which consists a flexible container. The **container type** is "warning", specified _after the triple colon_ `:::`; and the **container title** is "title". **Each container should be closed with the triple colon `:::` at the end.**
 
 ```markdown
 ::: warning title
-
 My paragraph with **bold text**
-
 :::
 ```
 
-**Even, you don't need to put empty lines inside the container.** But, _there must be empty lines before the first line and after the last line of the container, in order to parse the markdown properly._
+**You don't need to put empty lines inside the container.** But, _there must be empty lines before and after the container in order to parse the markdown properly._
 
 ```markdown
 <!--- here must be empty line --->
-
-::: danger My Title
+::: warning title
 My paragraph with **bold text**
 :::
-
 <!--- here must be empty line --->
 ```
 
@@ -97,9 +93,9 @@ Now, running `node example.js` yields:\
 Without `remark-flexible-containers`, you’d get:
 
 ```html
-<p>::: warning title</p>
-<p>My paragraph with <strong>bold text</strong></p>
-<p>:::</p>
+<p>::: warning title
+My paragraph with <strong>bold text</strong>
+:::</p>
 ```
 
 ## Options
@@ -154,7 +150,7 @@ Some information
 :::
 ```
 
-#### Without any options
+#### Without any option
 
 ```javascript
 use(remarkFlexibleContainers);
@@ -169,7 +165,7 @@ is going to produce as default:
 </div>
 ```
 
-#### With title option with `null`
+#### With the title option is `null`
 
 ```javascript
 use(remarkFlexibleContainers, {
