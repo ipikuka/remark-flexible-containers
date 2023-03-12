@@ -6,7 +6,7 @@ import rehypeStringify from "rehype-stringify";
 import dedent from "dedent";
 import type { VFileCompatible } from "vfile";
 
-import plugin from "../src/index";
+import plugin from "../src";
 
 const compiler: Processor = unified()
   .use(remarkParse)
