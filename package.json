@@ -17,7 +17,8 @@
     "prepublishOnly": "npm test && npm run prettier && npm run lint"
   },
   "files": [
-    "dist",
+    "dist/",
+    "src/",
     "LICENSE",
     "README.md"
   ],
@@ -66,7 +67,7 @@
   "dependencies": {
     "@types/mdast": "^3.0.11",
     "unist-util-find-after": "^4.0.1",
-    "unist-util-find-all-between": "^2.1.0",
+    "unist-util-find-between-all": "^1.0.4",
     "unist-util-visit": "^4.0.0"
   },
   "sideEffects": false

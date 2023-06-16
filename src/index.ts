@@ -3,7 +3,7 @@ import type { Plugin, Transformer } from "unified";
 import type { Node, Parent, Data } from "unist";
 import type { Paragraph, PhrasingContent, Root, Text } from "mdast";
 import { findAfter } from "unist-util-find-after";
-import between from "unist-util-find-all-between";
+import { findAllBetween } from "unist-util-find-between-all";
 
 type TPropertyFunction = (type?: string, title?: string) => Record<string, unknown>;
 
@@ -364,7 +364,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
     const closingFlag = analyzeClosingNode(closingNode as Paragraph);
 
-    const containerChildren = between(parent, openingNode, closingNode);
+    const containerChildren = findAllBetween(parent, openingNode, closingNode);
 
     if (openingFlag === "mutated") {
       containerChildren.unshift(openingNode);
