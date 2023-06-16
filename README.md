@@ -260,11 +260,25 @@ This package is fully typed with [TypeScript][typeScript]. The plugin options' t
 
 ## Compatibility
 
-This plugin works with unified version 6+ and remark version 7+. It is compatible with mdx version.2.
+This plugin works with unified version 6+ and remark version 7+. It is compatible with mdx version 2.
 
 ## Security
 
 Use of `remark-flexible-containers` does not involve rehype (hast) or user content so there are no openings for cross-site scripting (XSS) attacks.
+
+## My Remark Plugins
+
+The remark packages I have published are presented below:
++ [`remark-flexible-code-titles`](https://www.npmjs.com/package/remark-flexible-code-titles)
+  – Remark plugin to add titles or/and containers for the code blocks with customizable properties
++ [`remark-flexible-containers`](https://www.npmjs.com/package/remark-flexible-containers)
+  – Remark plugin to add custom containers with customizable properties in markdown
++ [`remark-flexible-paragraphs`](https://www.npmjs.com/package/remark-flexible-paragraphs)
+  – Remark plugin to add custom paragraphs with customizable properties in markdown
++ [`remark-flexible-markers`](https://www.npmjs.com/package/remark-flexible-markers)
+  – Remark plugin to add custom `mark` element with customizable properties in markdown
++ [`remark-ins`](https://www.npmjs.com/package/remark-ins)
+  – Remark plugin to add `ins` element in markdown
 
 ## License
 
