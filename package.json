@@ -28,12 +28,16 @@
   },
   "keywords": [
     "unified",
-    "remark",
-    "remark-plugin",
+    "mdast",
     "markdown",
+    "remark",
+    "plugin",
+    "remark-plugin",
+    "remark-container",
     "remark-containers",
-    "remark-flexible-containers",
-    "remark-custom-containers"
+    "remark-custom-container",
+    "remark-custom-containers",
+    "remark-flexible-containers"
   ],
   "author": "ipikuka <talatkuyuk@gmail.com>",
   "license": "MIT",
