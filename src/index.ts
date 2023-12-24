@@ -1,6 +1,6 @@
 import { visit, CONTINUE, type Visitor, type VisitorResult } from "unist-util-visit";
 import type { Plugin, Transformer } from "unified";
-import type { Node, Parent, Data } from "unist";
+import type { Node, Parent } from "unist";
 import type { Paragraph, PhrasingContent, Root, Text } from "mdast";
 import { findAfter } from "unist-util-find-after";
 import { findAllBetween } from "unist-util-find-between-all";
@@ -71,7 +71,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     };
   };
 
-  const constructContainer = (children: Node<Data>[], type: string, title: string): Parent => {
+  const constructContainer = (children: Node[], type: string, title: string): Parent => {
     let properties: Record<string, unknown> | undefined;
 
     if (settings.containerProperties) {
