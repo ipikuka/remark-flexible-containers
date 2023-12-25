@@ -6,12 +6,13 @@ import { findAfter } from "unist-util-find-after";
 import { findAllBetween } from "unist-util-find-between-all";
 
 type TPropertyFunction = (type?: string, title?: string) => Record<string, unknown>;
+type TTitleFunction = (type?: string, title?: string) => string | null | undefined;
 
 export type FlexibleContainerOptions = {
   containerTagName?: string;
   containerClassName?: string;
   containerProperties?: TPropertyFunction;
-  title?: null;
+  title?: TTitleFunction;
   titleTagName?: string;
   titleClassName?: string;
   titleProperties?: TPropertyFunction;
@@ -45,11 +46,19 @@ export const REGEX_BAD_SYNTAX = /^:::\s*\n+\s*:::\s*.*/;
 export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
   const settings = Object.assign({}, DEFAULT_SETTINGS, options);
 
-  const constructTitle = (type: string, title: string): Paragraph => {
+  const constructTitle = (type?: string, title?: string): Paragraph | undefined => {
+    const _title = title?.replace(/\s+/g, " ");
+    const _type = type?.toLowerCase();
+
+    const _settingsTitle = settings.title?.(_type, _title);
+    const _mainTitle = _title;
+
+    if (_settingsTitle === null || (_settingsTitle === undefined && !_mainTitle)) return;
+
     let properties: Record<string, unknown> | undefined;
 
     if (settings.titleProperties) {
-      properties = settings.titleProperties(type.toLowerCase(), title.replace(/\s+/g, " "));
+      properties = settings.titleProperties(_type, _title);
 
       Object.entries(properties).forEach(([k, v]) => {
         if ((typeof v === "string" && v === "") || (Array.isArray(v) && v.length === 0)) {
@@ -60,22 +69,25 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
     return {
       type: "paragraph",
-      children: [{ type: "text", value: title.replace(/\s+/g, " ") }],
+      children: [{ type: "text", value: _settingsTitle || _mainTitle || "" }],
       data: {
         hName: settings.titleTagName,
         hProperties: {
-          className: [settings.titleClassName, type.toLowerCase()],
+          className: [settings.titleClassName!, type?.toLowerCase() ?? ""],
           ...(properties && { ...properties }),
         },
       },
     };
   };
 
-  const constructContainer = (children: Node[], type: string, title: string): Parent => {
+  const constructContainer = (children: Node[], type?: string, title?: string): Parent => {
+    const _title = title?.replace(/\s+/g, " ");
+    const _type = type?.toLowerCase();
+
     let properties: Record<string, unknown> | undefined;
 
     if (settings.containerProperties) {
-      properties = settings.containerProperties(type.toLowerCase(), title.replace(/\s+/g, " "));
+      properties = settings.containerProperties(_type, _title);
 
       Object.entries(properties).forEach(([k, v]) => {
         if ((typeof v === "string" && v === "") || (Array.isArray(v) && v.length === 0)) {
@@ -90,7 +102,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       data: {
         hName: settings.containerTagName,
         hProperties: {
-          className: [settings.containerClassName, type.toLowerCase()],
+          className: [settings.containerClassName, _type ?? ""],
           ...(properties && { ...properties }),
         },
       },
@@ -331,17 +343,11 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     if (openingFlag === "complete") {
       // means that the container starts and ends within the same paragraph node
 
-      let titleNode: Paragraph | undefined = undefined;
+      const titleNode = constructTitle(type, title);
 
-      if (settings.title !== null && title) {
-        titleNode = constructTitle(type ?? "", title ?? "");
-      }
+      const containerChildren = titleNode ? [titleNode, node] : [node];
 
-      const containerNode = constructContainer(
-        titleNode ? [titleNode, node] : [node],
-        type ?? "",
-        title ?? "",
-      );
+      const containerNode = constructContainer(containerChildren, type, title);
 
       // place it the place of the current paragraph node
       parent.children.splice(index!, 1, containerNode);
@@ -378,13 +384,11 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     // if there is no content but type, then construct the container
     if (!containerChildren.length && !type) return;
 
-    if (settings.title !== null && title) {
-      const titleNode = constructTitle(type ?? "", title ?? "");
+    const titleNode = constructTitle(type, title);
 
-      if (titleNode) containerChildren.splice(0, 0, titleNode);
-    }
+    if (titleNode) containerChildren.splice(0, 0, titleNode);
 
-    const containerNode = constructContainer(containerChildren, type ?? "", title ?? "");
+    const containerNode = constructContainer(containerChildren, type, title);
 
     const { children } = parent;
     const openingIndex = children.indexOf(openingNode);
