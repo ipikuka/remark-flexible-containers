@@ -11,7 +11,7 @@ import plugin from "../src";
 const compiler = unified()
   .use(remarkParse)
   .use(gfm)
-  .use(plugin, { title: null })
+  .use(plugin, { title: () => null })
   .use(remarkRehype)
   .use(rehypeStringify);
 
