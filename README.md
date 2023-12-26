@@ -100,47 +100,59 @@ My paragraph with <strong>bold text</strong>
 
 ## Options
 
-All options are optional and have default values.
+All options are **optional** and have **default values**.
 
 ```javascript
-use(remarkFlexibleContainers, {
-  containerTagName: string, // optional, default is "div"
-  containerClassName: string, // optional, default is "remark-container"
-  containerProperties: (type?: string, title?: string) => Record<string, unknown>, // optional, default is undefined
-  title: (type?: string, title?: string) => string | null | undefined, // optional, default is undefined
-  titleTagName: string, // optional, default is "div"
-  titleClassName: string, // optional, default is "remark-container-title"
-  titleProperties: (type?: string, title?: string) => Record<string, unknown>, // optional, default is undefined
-})
+
+/* the type definitions in the package
+type TagNameFunction = (type?: string, title?: string) => string;
+type ClassNameFunction = (type?: string, title?: string) => string[];
+type PropertyFunction = (type?: string, title?: string) => Record<string, unknown>;
+type TitleFunction = (type?: string, title?: string) => string | null | undefined;
+*/
+
+// create flexible container options object
+const flexibleContainerOptions: FlexibleContainerOptions = {
+  containerTagName?: string | TagNameFunction; // default is "div"
+  containerClassName?: string | ClassNameFunction; // default is "remark-container"
+  containerProperties?: PropertyFunction; // default is undefined
+  title?: TitleFunction; // default is undefined
+  titleTagName?: string | TagNameFunction; // default is "div"
+  titleClassName?: string | ClassNameFunction; // // default is "remark-container-title"
+  titleProperties?: PropertyFunction; // default is undefined
+};
+
+// use these options like below
+use(remarkFlexibleContainers, flexibleContainerOptions)
 ```
 
 #### `containerTagName`
 
-It is a **string** option for providing custom HTML tag name for the `container` node other than `div`.
+It is a **string | (type?: string, title?: string) => string** option for providing custom HTML tag name for the `container` node other than default `div`.
 
 #### `containerClassName`
 
-It is a **string** option for providing custom className for the `container` node other than `remark-container`.
+It is a **string | (type?: string, title?: string) => string[]** option for providing custom className(s) for the `container` node other than default `remark-container`. If you provide a **string** value or don't provide an option, the package adds the type of the container into classNames. But, if you provide a **callback function** it is your responsibility to add the type of the container or not into classNames.
 
 #### `containerProperties`
 
-It is an option to set additional properties for the `container` node. It is a callback function that takes the `type` and the `title` as optional arguments and returns the object which is going to be used for adding additional properties into the `container` node.
+It is **(type?: string, title?: string) => Record<string, unknown>** option to set additional properties for the `container` node. It is a callback function that takes the `type` and the `title` as optional arguments and returns the object which is going to be used for adding additional properties into the `container` node.
 
 #### `title`
 
-It is an option to set the title with a callback function. The callback function takes the `type` and the `title` as optional arguments and returns **string | null | undefined**. **If it returns null** `title: () => null`, the plugin will not add the `title` node. Default is `undefined`, which adds a `title` node if a title is provided in markdown.
+It is a **(type?: string, title?: string) => string | null | undefined** option to set the title with a callback function. The callback function takes the `type` and the `title` as optional arguments and returns **string | null | undefined**. **If it returns null** `title: () => null`, the plugin will not add the `title` node. Default is `undefined`, which adds a `title` node if a title is provided in markdown.
 
 #### `titleTagName`
 
-It is a **string** option for providing custom HTML tag name for the `title` node other than `div`.
+It is a **string | (type?: string, title?: string) => string** option for providing custom HTML tag name for the `title` node other than default `div`.
 
 #### `titleClassName`
 
-It is a **string** option for providing custom className for the `title` node other than `remark-container-title`.
+It is a **string | (type?: string, title?: string) => string[]** option for providing custom className(s) for the `title` node other than default `remark-container-title`. If you provide a **string** value or don't provide an option, the package adds the type of the container into classNames. But, if you provide a **callback function** it is your responsibility to add the type of the container or not into classNames.
 
 #### `titleProperties`
 
-It is an option to set additional properties for the `title` node. It is a callback function that takes the `type` and the `title` as optional arguments and returns the object which is going to be used for adding additional properties into the `title` node.
+It is a **(type?: string, title?: string) => Record<string, unknown>** option to set additional properties for the `title` node. It is a callback function that takes the `type` and the `title` as optional arguments and returns the object which is going to be used for adding additional properties into the `title` node.
 
 ## Examples:
 
@@ -209,6 +221,42 @@ is going to produce the container `section` element like below:
   <span class="remark-custom-wrapper-title" data-type="info">MY TITLE</span>
   <p>Some information</p>
 </section>
+```
+
+#### With options having callback functions for the tag names and the class names.
+
+```javascript
+use(remarkFlexibleContainers, {
+  containerTagName(type) {
+    return type ? "section" : "div";
+  },
+  containerClassName(type) {
+    return type
+      ? [`remark-custom-container-${type}`]
+      : ["remark-custom-container", "typeless"];
+  },
+  containerProperties(type, title) {
+    return {
+      ["data-type"]: type,
+      ["data-title"]: title,
+    };
+  },
+  title: (type, title) => {
+    return title ? toTitleCase(title) : type ? toTitleCase(type) : "Fallback Title";
+  },
+  titleTagName(type) {
+    return type ? "h2" : "span";
+  },
+  titleClassName(type) {
+    return type ? [`remark-custom-title-${type}`] : ["remark-custom-title", "typeless"];
+  },
+  titleProperties: (type, title) => {
+    return {
+      ["data-type"]: type,
+      ["data-title"]: title?.toUpperCase(),
+    };
+  },
+});
 ```
 
 #### Without a type and a title

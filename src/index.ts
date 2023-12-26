@@ -5,17 +5,19 @@ import type { Paragraph, PhrasingContent, Root, Text } from "mdast";
 import { findAfter } from "unist-util-find-after";
 import { findAllBetween } from "unist-util-find-between-all";
 
-type TPropertyFunction = (type?: string, title?: string) => Record<string, unknown>;
-type TTitleFunction = (type?: string, title?: string) => string | null | undefined;
+type TagNameFunction = (type?: string, title?: string) => string;
+type ClassNameFunction = (type?: string, title?: string) => string[];
+type PropertyFunction = (type?: string, title?: string) => Record<string, unknown>;
+type TitleFunction = (type?: string, title?: string) => string | null | undefined;
 
 export type FlexibleContainerOptions = {
-  containerTagName?: string;
-  containerClassName?: string;
-  containerProperties?: TPropertyFunction;
-  title?: TTitleFunction;
-  titleTagName?: string;
-  titleClassName?: string;
-  titleProperties?: TPropertyFunction;
+  containerTagName?: string | TagNameFunction;
+  containerClassName?: string | ClassNameFunction;
+  containerProperties?: PropertyFunction;
+  title?: TitleFunction;
+  titleTagName?: string | TagNameFunction;
+  titleClassName?: string | ClassNameFunction;
+  titleProperties?: PropertyFunction;
 };
 
 const DEFAULT_SETTINGS: FlexibleContainerOptions = {
@@ -47,8 +49,8 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
   const settings = Object.assign({}, DEFAULT_SETTINGS, options);
 
   const constructTitle = (type?: string, title?: string): Paragraph | undefined => {
-    const _title = title?.replace(/\s+/g, " ");
     const _type = type?.toLowerCase();
+    const _title = title?.replace(/\s+/g, " ");
 
     const _settingsTitle = settings.title?.(_type, _title);
     const _mainTitle = _title;
@@ -67,13 +69,23 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       });
     }
 
+    const titleTagName =
+      typeof settings.titleTagName === "string"
+        ? settings.titleTagName
+        : settings.titleTagName?.(_type, _title);
+
+    const titleClassName =
+      typeof settings.titleClassName === "string"
+        ? [settings.titleClassName!, _type ?? ""]
+        : [...(settings.titleClassName?.(_type, _title) ?? [])];
+
     return {
       type: "paragraph",
       children: [{ type: "text", value: _settingsTitle || _mainTitle || "" }],
       data: {
-        hName: settings.titleTagName,
+        hName: titleTagName,
         hProperties: {
-          className: [settings.titleClassName!, type?.toLowerCase() ?? ""],
+          className: titleClassName,
           ...(properties && { ...properties }),
         },
       },
@@ -81,8 +93,8 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
   };
 
   const constructContainer = (children: Node[], type?: string, title?: string): Parent => {
-    const _title = title?.replace(/\s+/g, " ");
     const _type = type?.toLowerCase();
+    const _title = title?.replace(/\s+/g, " ");
 
     let properties: Record<string, unknown> | undefined;
 
@@ -96,13 +108,23 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       });
     }
 
+    const containerTagName =
+      typeof settings.containerTagName === "string"
+        ? settings.containerTagName
+        : settings.containerTagName?.(_type, _title);
+
+    const containerClassName =
+      typeof settings.containerClassName === "string"
+        ? [settings.containerClassName!, _type ?? ""]
+        : [...(settings.containerClassName?.(_type, _title) ?? [])];
+
     return {
       type: "container",
       children,
       data: {
-        hName: settings.containerTagName,
+        hName: containerTagName,
         hProperties: {
-          className: [settings.containerClassName, _type ?? ""],
+          className: containerClassName,
           ...(properties && { ...properties }),
         },
       },
