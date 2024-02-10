@@ -1,6 +1,7 @@
 import { visit, CONTINUE, type Visitor, type VisitorResult } from "unist-util-visit";
 import type { Plugin, Transformer } from "unified";
 import type { Node, Parent } from "unist";
+import { u } from "unist-builder";
 import type { Paragraph, PhrasingContent, Root, Text } from "mdast";
 import { findAfter } from "unist-util-find-after";
 import { findAllBetween } from "unist-util-find-between-all";
@@ -310,6 +311,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
    *
    * if the paragraph has one child (as Text),
    * control weather has closing wither ":::" or not (check completeness)
+   *
    */
   function analyzeClosingNode(node: Paragraph): AnalyzeResult["flag"] {
     const { children } = node;
@@ -335,6 +337,39 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     }
   }
 
+  /**
+   *
+   * if the paragraph has one child,
+   * control wether it has only one child text, and the text value is empty string ""
+   *
+   */
+  function checkParagraphWithEmptyText(node: Paragraph): boolean {
+    if (node.children.length === 0) return true;
+
+    if (
+      node.children.length === 1 &&
+      node.children[0].type === "text" &&
+      node.children[0].value === ""
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   *
+   * if the first child of paragraph children is "break", then remove that child
+   *
+   */
+  function deleteFirstChildBreak(node: Paragraph): undefined {
+    if (node.children.length === 0) return;
+
+    if (node.children[0].type === "break") {
+      node.children.shift();
+    }
+  }
+
   const visitor: Visitor<Paragraph> = function (node, index, parent): VisitorResult {
     if (!parent) return;
 
@@ -347,7 +382,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     let title: string | undefined = undefined;
 
     if (node.children.length === 1) {
-      const { flag: _flag, type: _type, title: _title } = analyzeChild(node);
+      const { flag: _flag, type: _type, title: _title } = analyzeChild(node); // mutates the node
 
       openingFlag = _flag;
       type = _type;
@@ -355,7 +390,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     }
 
     if (node.children.length > 1) {
-      const { flag: _flag, type: _type, title: _title } = analyzeChildren(node);
+      const { flag: _flag, type: _type, title: _title } = analyzeChildren(node); // mutates the node
 
       openingFlag = _flag;
       type = _type;
@@ -367,7 +402,15 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
       const titleNode = constructTitle(type, title);
 
-      const containerChildren = titleNode ? [titleNode, node] : [node];
+      deleteFirstChildBreak(node); // mutates the node
+
+      const isParagraphWithEmptyText = checkParagraphWithEmptyText(node);
+
+      // is the paragraph node has only one child with empty text, don't add that paragraph node as a child
+      // meaningly, don't produce empty <p />
+      const containerChildren = isParagraphWithEmptyText
+        ? [...(titleNode ? [titleNode] : [])]
+        : [...(titleNode ? [titleNode] : []), node];
 
       const containerNode = constructContainer(containerChildren, type, title);
 
@@ -403,8 +446,10 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     }
 
     // if there is no content and type do not construct the container
-    // if there is no content but type, then construct the container
+
     if (!containerChildren.length && !type) return;
+
+    // if there is no content but type, then continue to construct the container
 
     const titleNode = constructTitle(type, title);
 
@@ -419,6 +464,22 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
   };
 
   const transformer: Transformer<Root> = (tree) => {
+    // if there is a html node with the value at the end "\n:::"
+    // then move the "\n:::" part into a new paragraph
+    visit(tree, "html", (node, index, parent) => {
+      if (!/\n:::$/.test(node.value)) return;
+
+      node.value = node.value.replace(/\n:::$/, "");
+
+      const p = u("paragraph", [u("text", "\n:::")]);
+
+      // add the paragraph after the html node, in order to the next visitor can catch the container node
+      parent?.children.splice(index! + 1, 0, p);
+    });
+
+    /************************************/
+
+    // main function
     visit(tree, "paragraph", visitor);
   };
 

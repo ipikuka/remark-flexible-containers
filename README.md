@@ -103,7 +103,6 @@ My paragraph with <strong>bold text</strong>
 All options are **optional** and have **default values**.
 
 ```javascript
-
 /* the type definitions in the package
 type TagNameFunction = (type?: string, title?: string) => string;
 type ClassNameFunction = (type?: string, title?: string) => string[];

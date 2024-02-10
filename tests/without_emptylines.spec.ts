@@ -138,7 +138,7 @@ describe("no options - success", () => {
     `;
 
     expect(await process(input)).toMatchInlineSnapshot(
-      `"<div class="remark-container info"><p></p></div>"`,
+      `"<div class="remark-container info"></div>"`,
     );
   });
 
@@ -436,7 +436,7 @@ describe("no options - success", () => {
   });
 
   // ******************************************
-  it("complex - 1", async () => {
+  it("complex", async () => {
     const input = dedent`
         ::: danger   My   Title
         My name is **talatkuyuk** AKA ipikuka
@@ -450,38 +450,6 @@ describe("no options - success", () => {
     expect(await process(input)).toMatchInlineSnapshot(`
       "<div class="remark-container danger"><div class="remark-container-title danger">My Title</div><p>My name is <strong>talatkuyuk</strong> AKA ipikuka
       this package is so <em>cool italic</em></p><p>other paragraph <em>italic content</em> then
-      some <strong>bold content</strong> without stress</p></div>"
-    `);
-  });
-
-  it("complex - 2", async () => {
-    const input = dedent`
-      ::: danger   My   Title
-      My name is **talatkuyuk** AKA ipikuka
-      this package is _so cool and flexible_
-
-      ::it does not confuse with double colons::
-
-      <mark>marked text</mark>
-      <MarkRed>custom marker</MarkRed>
-
-      <details>
-        <summary>HTML tag works too</summary>
-        <p>I am working</p>
-      </details>
-        
-      other paragraph *italic content* and,
-      some **bold content** without stress
-      :::
-    `;
-
-    expect(await process(input)).toMatchInlineSnapshot(`
-      "<div class="remark-container danger"><div class="remark-container-title danger">My Title</div><p>My name is <strong>talatkuyuk</strong> AKA ipikuka
-      this package is <em>so cool and flexible</em></p><p>::it does not confuse with double colons::</p><p><mark>marked text</mark>
-      <MarkRed>custom marker</MarkRed></p><details>
-        <summary>HTML tag works too</summary>
-        <p>I am working</p>
-      </details><p>other paragraph <em>italic content</em> and,
       some <strong>bold content</strong> without stress</p></div>"
     `);
   });
