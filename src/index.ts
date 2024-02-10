@@ -464,8 +464,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
   };
 
   const transformer: Transformer<Root> = (tree) => {
-    // if there is a html node with the value at the end "\n:::"
-    // then move the "\n:::" part into a new paragraph
+    // if a html node.value ends with "\n:::", remove and carry it into a new paragraph
     visit(tree, "html", (node, index, parent) => {
       if (!/\n:::$/.test(node.value)) return;
 
@@ -477,9 +476,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       parent?.children.splice(index! + 1, 0, p);
     });
 
-    /************************************/
-
-    // main function
+    // main visit
     visit(tree, "paragraph", visitor);
   };
 
