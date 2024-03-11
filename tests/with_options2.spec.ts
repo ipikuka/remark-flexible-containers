@@ -12,27 +12,17 @@ const compiler = unified()
   .use(remarkParse)
   .use(gfm)
   .use(plugin, {
-    containerTagName: "section",
-    containerClassName: "remark-custom-container",
-    containerProperties(type, title) {
-      return {
-        ["data-type"]: type,
-        title,
-        dummy: "", // shouldn't be added
-        empty: [], // shouldn't be added
-        // className: undefined, // shouldn't be taken account
-      };
+    containerTagName(type) {
+      return !type ? "section" : "div";
     },
-    titleTagName: "span",
-    titleClassName: "remark-custom-container-title",
-    titleProperties: (type, title) => {
-      return {
-        ["data-type"]: type,
-        ["data-title"]: title?.toUpperCase(),
-        dummy: "", // shouldn't be added
-        empty: [], // shouldn't be added
-        // className: undefined, // shouldn't be taken account
-      };
+    containerClassName(type) {
+      return !type ? ["remark-section"] : ["remark-container", `remark-container-${type}`];
+    },
+    titleTagName(type) {
+      return !type ? "article" : "span";
+    },
+    titleClassName(type) {
+      return [type ? `remark-${type}}` : "remark-title"];
     },
   })
   .use(remarkRehype)
@@ -60,10 +50,10 @@ describe("with options - fail", () => {
   // ******************************************
   it("Type mis-placed, no title, no content", async () => {
     const input = dedent`
-        :::
-        
-        ::: tip
-      `;
+      :::
+      
+      ::: tip
+    `;
 
     expect(await process(input)).toMatchInlineSnapshot(`
       "<p>:::</p>
@@ -84,7 +74,7 @@ describe("with options - success", () => {
     `;
 
     expect(await process(input)).toMatchInlineSnapshot(
-      `"<section class="remark-custom-container"><p>content</p></section>"`,
+      `"<section class="remark-section"><p>content</p></section>"`,
     );
   });
 
@@ -97,7 +87,7 @@ describe("with options - success", () => {
     `;
 
     expect(await process(input)).toMatchInlineSnapshot(
-      `"<section class="remark-custom-container info" data-type="info"></section>"`,
+      `"<div class="remark-container remark-container-info"></div>"`,
     );
   });
 
@@ -112,7 +102,7 @@ describe("with options - success", () => {
     `;
 
     expect(await process(input)).toMatchInlineSnapshot(
-      `"<section class="remark-custom-container danger" data-type="danger"><p>content</p></section>"`,
+      `"<div class="remark-container remark-container-danger"><p>content</p></div>"`,
     );
   });
 
@@ -127,7 +117,7 @@ describe("with options - success", () => {
     `;
 
     expect(await process(input)).toMatchInlineSnapshot(
-      `"<section class="remark-custom-container danger" data-type="danger" title="Title"><span class="remark-custom-container-title danger" data-type="danger" data-title="TITLE">Title</span><p>content</p></section>"`,
+      `"<div class="remark-container remark-container-danger"><span class="remark-danger}">Title</span><p>content</p></div>"`,
     );
   });
 
@@ -142,7 +132,7 @@ describe("with options - success", () => {
       `;
 
     expect(await process(input)).toMatchInlineSnapshot(
-      `"<section class="remark-custom-container danger" data-type="danger" title="My Title"><span class="remark-custom-container-title danger" data-type="danger" data-title="MY TITLE">My Title</span><p>content</p></section>"`,
+      `"<div class="remark-container remark-container-danger"><span class="remark-danger}">My Title</span><p>content</p></div>"`,
     );
   });
 
@@ -159,7 +149,7 @@ describe("with options - success", () => {
       `;
 
     expect(await process(input)).toMatchInlineSnapshot(
-      `"<section class="remark-custom-container danger" data-type="danger" title="Title"><span class="remark-custom-container-title danger" data-type="danger" data-title="TITLE">Title</span><p><strong>bold text</strong> paragraph</p><p>other paragraph <em>italic content</em></p></section>"`,
+      `"<div class="remark-container remark-container-danger"><span class="remark-danger}">Title</span><p><strong>bold text</strong> paragraph</p><p>other paragraph <em>italic content</em></p></div>"`,
     );
   });
 });
