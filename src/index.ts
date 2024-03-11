@@ -8,7 +8,11 @@ import { findAllBetween } from "unist-util-find-between-all";
 
 type TagNameFunction = (type?: string, title?: string) => string;
 type ClassNameFunction = (type?: string, title?: string) => string[];
-type PropertyFunction = (type?: string, title?: string) => Record<string, unknown>;
+type PropertyFunction = (
+  type?: string,
+  title?: string,
+) => Record<string, unknown> & { className?: never };
+
 type TitleFunction = (type?: string, title?: string) => string | null | undefined;
 
 export type FlexibleContainerOptions = {
@@ -64,7 +68,11 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       properties = settings.titleProperties(_type, _title);
 
       Object.entries(properties).forEach(([k, v]) => {
-        if ((typeof v === "string" && v === "") || (Array.isArray(v) && v.length === 0)) {
+        if (
+          (typeof v === "string" && v === "") ||
+          (Array.isArray(v) && v.length === 0) ||
+          k === "className"
+        ) {
           properties && (properties[k] = undefined);
         }
       });
@@ -103,7 +111,11 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       properties = settings.containerProperties(_type, _title);
 
       Object.entries(properties).forEach(([k, v]) => {
-        if ((typeof v === "string" && v === "") || (Array.isArray(v) && v.length === 0)) {
+        if (
+          (typeof v === "string" && v === "") ||
+          (Array.isArray(v) && v.length === 0) ||
+          k === "className"
+        ) {
           properties && (properties[k] = undefined);
         }
       });
