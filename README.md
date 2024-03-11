@@ -1,13 +1,15 @@
 # remark-flexible-containers
 
-[![NPM version][npm-image]][npm-url]
-[![Build][github-build]][github-build-url]
-![npm-typescript]
-[![License][github-license]][github-license-url]
+[![NPM version][badge-npm]][npm-package-url]
+[![Build][badge-build]][github-workflow-url]
+[![codecov](https://codecov.io/gh/ipikuka/remark-flexible-containers/graph/badge.svg?token=XWTU29ESSO)](https://codecov.io/gh/ipikuka/remark-flexible-containers)
+[![type-coverage](https://img.shields.io/badge/dynamic/json.svg?label=type-coverage&prefix=%E2%89%A5&suffix=%&query=$.typeCoverage.atLeast&uri=https%3A%2F%2Fraw.githubusercontent.com%2Fipikuka%2Fremark-flexible-containers%2Fmaster%2Fpackage.json)](https://github.com/ipikuka/remark-flexible-containers)
+[![typescript][badge-typescript]][typescript-url]
+[![License][badge-license]][github-license-url]
 
-This package is a [unified][unified] ([remark][remark]) plugin to add custom containers in a flexible way (compatible with new parser "[micromark][micromark]").
+This package is a [unified][unified] ([remark][remark]) plugin to add custom containers with customizable properties in markdown.
 
-"**unified**" is a project that transforms content with abstract syntax trees (ASTs). "**remark**" adds support for markdown to unified. "**mdast**" is the markdown abstract syntax tree (AST) that remark uses.
+**[unified][unified]** is a project that transforms content with abstract syntax trees (ASTs) using the new parser **[micromark][micromark]**. **[remark][remark]** adds support for markdown to unified. **[mdast][mdast]** is the Markdown Abstract Syntax Tree (AST) which is a specification for representing markdown in a syntax tree.
 
 **This plugin is a remark plugin that transforms the mdast.**
 
@@ -18,7 +20,7 @@ This plugin is useful if you want to **add a custom container** in markdown, for
 - This plugin can add `container` node, with _custom tag name, custom class name and also additional properties_.
 - This plugin can add `title` node inside the container, if the title is provided, with _custom tag name, custom class name and also additional properties_.
 
-This plugin does not support nested containers.
+This plugin doesn't support yet nested containers.
 
 ## Installation
 
@@ -308,25 +310,44 @@ This package is fully typed with [TypeScript][typeScript]. The plugin options' t
 
 ## Compatibility
 
-This plugin works with unified version 6+ and remark version 7+. It is compatible with mdx version 2.
+This plugin works with `unified` version 6+ and `remark` version 7+. It is compatible with `mdx` version 2+.
 
 ## Security
 
 Use of `remark-flexible-containers` does not involve rehype (hast) or user content so there are no openings for cross-site scripting (XSS) attacks.
 
-## My Remark Plugins
+## My Plugins
 
-The remark packages I have published are presented below:
-+ [`remark-flexible-code-titles`](https://www.npmjs.com/package/remark-flexible-code-titles)
+I like to contribute the Unified / Remark / MDX ecosystem, so I recommend you to have a look my plugins.
+
+### My Remark Plugins
+
+- [`remark-flexible-code-titles`](https://www.npmjs.com/package/remark-flexible-code-titles)
   – Remark plugin to add titles or/and containers for the code blocks with customizable properties
-+ [`remark-flexible-containers`](https://www.npmjs.com/package/remark-flexible-containers)
+- [`remark-flexible-containers`](https://www.npmjs.com/package/remark-flexible-containers)
   – Remark plugin to add custom containers with customizable properties in markdown
-+ [`remark-flexible-paragraphs`](https://www.npmjs.com/package/remark-flexible-paragraphs)
-  – Remark plugin to add custom paragraphs with customizable properties in markdown
-+ [`remark-flexible-markers`](https://www.npmjs.com/package/remark-flexible-markers)
-  – Remark plugin to add custom `mark` element with customizable properties in markdown
-+ [`remark-ins`](https://www.npmjs.com/package/remark-ins)
+- [`remark-ins`](https://www.npmjs.com/package/remark-ins)
   – Remark plugin to add `ins` element in markdown
+- [`remark-flexible-paragraphs`](https://www.npmjs.com/package/remark-flexible-paragraphs)
+  – Remark plugin to add custom paragraphs with customizable properties in markdown
+- [`remark-flexible-markers`](https://www.npmjs.com/package/remark-flexible-markers)
+  – Remark plugin to add custom `mark` element with customizable properties in markdown
+- [`remark-flexible-toc`](https://www.npmjs.com/package/remark-flexible-toc)
+  – Remark plugin to expose the table of contents via Vfile.data or via an option reference
+- [`remark-mdx-remove-esm`](https://www.npmjs.com/package/remark-mdx-remove-esm)
+  – Remark plugin to remove import and/or export statements (mdxjsEsm)
+
+### My Rehype Plugins
+
+- [`rehype-pre-language`](https://www.npmjs.com/package/rehype-pre-language)
+  – Rehype plugin to add language information as a property to `pre` element
+
+### My Recma Plugins
+
+- [`recma-mdx-escape-missing-components`](https://www.npmjs.com/package/recma-mdx-escape-missing-components)
+  – Recma plugin to set the default value `() => null` for the Components in MDX in case of missing or not provided so as not to throw an error
+- [`recma-mdx-change-props`](https://www.npmjs.com/package/recma-mdx-change-props)
+  – Recma plugin to change the `props` parameter into the `_props` in the `function _createMdxContent(props) {/* */}` in the compiled source in order to be able to use `{props.foo}` like expressions. It is useful for the `next-mdx-remote` or `next-mdx-remote-client` users in `nextjs` applications.
 
 ## License
 
@@ -334,25 +355,31 @@ The remark packages I have published are presented below:
 
 ### Keywords
 
-[unified][unifiednpm] [remark][remarknpm] [remark-plugin][remarkpluginnpm] [mdast][mdastnpm] [markdown][markdownnpm] [remark custom container][remarkCustomContainersnpm]
+🟩 [unified][unifiednpm] 🟩 [remark][remarknpm] 🟩 [remark-plugin][remarkpluginsnpm] 🟩 [mdast][mdastnpm] 🟩 [markdown][markdownnpm] 🟩 [remark custom container][remarkcontainernpm]
+
+[unifiednpm]: https://www.npmjs.com/search?q=keywords:unified
+[remarknpm]: https://www.npmjs.com/search?q=keywords:remark
+[remarkpluginsnpm]: https://www.npmjs.com/search?q=keywords:remark%20plugin
+[mdastnpm]: https://www.npmjs.com/search?q=keywords:mdast
+[markdownnpm]: https://www.npmjs.com/search?q=keywords:markdown
+[remarkcontainernpm]: https://www.npmjs.com/search?q=keywords:remark%20container
 
 [unified]: https://github.com/unifiedjs/unified
-[unifiednpm]: https://www.npmjs.com/search?q=keywords:unified
 [remark]: https://github.com/remarkjs/remark
-[remarknpm]: https://www.npmjs.com/search?q=keywords:remark
-[remarkpluginnpm]: https://www.npmjs.com/search?q=keywords:remark%20plugin
+[remarkplugins]: https://github.com/remarkjs/remark/blob/main/doc/plugins.md
 [mdast]: https://github.com/syntax-tree/mdast
-[mdastnpm]: https://www.npmjs.com/search?q=keywords:mdast
 [micromark]: https://github.com/micromark/micromark
 [rehypeprismplus]: https://github.com/timlrx/rehype-prism-plus
 [typescript]: https://www.typescriptlang.org/
-[license]: https://github.com/ipikuka/remark-flexible-containers/blob/main/LICENSE
-[markdownnpm]: https://www.npmjs.com/search?q=keywords:markdown
-[remarkCustomContainersnpm]: https://www.npmjs.com/search?q=keywords:remark%20custom%20container
-[npm-url]: https://www.npmjs.com/package/remark-flexible-containers
-[npm-image]: https://img.shields.io/npm/v/remark-flexible-containers
-[github-license]: https://img.shields.io/github/license/ipikuka/remark-flexible-containers
-[github-license-url]: https://github.com/ipikuka/remark-flexible-containers/blob/master/LICENSE
-[github-build]: https://github.com/ipikuka/remark-flexible-containers/actions/workflows/publish.yml/badge.svg
-[github-build-url]: https://github.com/ipikuka/remark-flexible-containers/actions/workflows/publish.yml
-[npm-typescript]: https://img.shields.io/npm/types/remark-flexible-containers
+
+[badge-npm]: https://img.shields.io/npm/v/remark-flexible-containers
+[npm-package-url]: https://www.npmjs.com/package/remark-flexible-containers
+
+[badge-license]: https://img.shields.io/github/license/ipikuka/remark-flexible-containers
+[github-license-url]: https://github.com/ipikuka/remark-flexible-containers/blob/main/LICENSE
+
+[badge-build]: https://github.com/ipikuka/remark-flexible-containers/actions/workflows/publish.yml/badge.svg
+[github-workflow-url]: https://github.com/ipikuka/remark-flexible-containers/actions/workflows/publish.yml
+
+[badge-typescript]: https://img.shields.io/npm/types/remark-flexible-containers
+[typescript-url]: https://www.typescriptlang.org/
