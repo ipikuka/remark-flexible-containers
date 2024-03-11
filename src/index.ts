@@ -1,6 +1,15 @@
 import { CONTINUE, visit } from "unist-util-visit";
 import type { Plugin, Transformer } from "unified";
-import type { BlockContent, Data, Paragraph, Parent, PhrasingContent, Root, Text } from "mdast";
+import type {
+  BlockContent,
+  Data,
+  Node,
+  Paragraph,
+  Parent,
+  PhrasingContent,
+  Root,
+  Text,
+} from "mdast";
 import { u } from "unist-builder";
 import { findAfter } from "unist-util-find-after";
 import { findAllBetween } from "unist-util-find-between-all";
@@ -108,7 +117,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       Object.entries(properties).forEach(([k, v]) => {
         if (
           (typeof v === "string" && v === "") ||
-          (Array.isArray(v) && v.length === 0) ||
+          (Array.isArray(v) && (v as unknown[]).length === 0) ||
           k === "className"
         ) {
           properties && (properties[k] = undefined);
@@ -155,7 +164,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       Object.entries(properties).forEach(([k, v]) => {
         if (
           (typeof v === "string" && v === "") ||
-          (Array.isArray(v) && v.length === 0) ||
+          (Array.isArray(v) && (v as unknown[]).length === 0) ||
           k === "className"
         ) {
           properties && (properties[k] = undefined);
@@ -428,7 +437,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
    *
    * type predicate function
    */
-  function is<T>(node: any, type: string): node is T {
+  function is<T extends Node>(node: Node, type: string): node is T {
     return node.type === type;
   }
 
