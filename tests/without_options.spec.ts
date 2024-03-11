@@ -82,6 +82,50 @@ describe("no options - fail", () => {
 
     expect(await process(input)).toMatchInlineSnapshot(`"<p>:::danger Title:::</p>"`);
   });
+
+  // ******************************************
+  it("something exists before", async () => {
+    const input = dedent`
+      x::: warning
+      Hello
+      :::
+    `;
+
+    expect(await process(input)).toMatchInlineSnapshot(`
+      "<p>x::: warning
+      Hello
+      :::</p>"
+    `);
+  });
+
+  // ******************************************
+  it("other phrase exists before", async () => {
+    const input = dedent`
+      *x*::: warning
+      Hello
+      :::
+    `;
+
+    expect(await process(input)).toMatchInlineSnapshot(`
+      "<p><em>x</em>::: warning
+      Hello
+      :::</p>"
+    `);
+  });
+
+  // ******************************************
+  it("something exists after", async () => {
+    const input = dedent`
+      ::: warning
+      Hello
+      ::: x
+    `;
+
+    expect(await process(input)).toMatchInlineSnapshot(`
+      "<p>Hello
+      ::: x</p>"
+    `);
+  });
 });
 
 describe("no options - success", () => {

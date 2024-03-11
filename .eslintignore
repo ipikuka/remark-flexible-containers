@@ -2,6 +2,6 @@
 .vscode
 dist
 node_modules
+coverage
 package-lock.json
 archive
-steps.md

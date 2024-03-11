@@ -107,7 +107,9 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
     if (_settingsTitle === null) return; // title node is not wanted via options
 
-    if (_settingsTitle === undefined && !_title) return;
+    const mainTitle = _settingsTitle || _title;
+
+    if (!mainTitle) return;
 
     let properties: Record<string, unknown> | undefined;
 
@@ -133,11 +135,11 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     const titleClassName =
       typeof settings.titleClassName === "string"
         ? [settings.titleClassName, _type ?? ""]
-        : [...(settings.titleClassName(_type, _title) ?? [])];
+        : [...settings.titleClassName(_type, _title)];
 
     return {
       type: "paragraph",
-      children: [{ type: "text", value: _settingsTitle || _title || "" }],
+      children: [{ type: "text", value: mainTitle }],
       data: {
         hName: titleTagName,
         hProperties: {
@@ -180,7 +182,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     const containerClassName =
       typeof settings.containerClassName === "string"
         ? [settings.containerClassName, _type ?? ""]
-        : [...(settings.containerClassName(_type, _title) ?? [])];
+        : [...settings.containerClassName(_type, _title)];
 
     return {
       type: "container",
@@ -407,8 +409,6 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
    *
    */
   function checkParagraphWithEmptyText(node: Paragraph): boolean {
-    if (node.children.length === 0) return true;
-
     if (
       node.children.length === 1 &&
       node.children[0].type === "text" &&
@@ -426,8 +426,6 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
    *
    */
   function deleteFirstChildBreak(node: Paragraph): undefined {
-    if (node.children.length === 0) return;
-
     if (node.children[0].type === "break") {
       node.children.shift();
     }
@@ -511,6 +509,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       if (!closingNode) return;
 
       // just for type prediction
+      /* istanbul ignore next */
       if (!is<Paragraph>(closingNode, "paragraph")) return;
 
       const closingFlag = analyzeClosingNode(closingNode); // mutates the closingNode
