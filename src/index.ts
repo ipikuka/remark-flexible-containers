@@ -1,25 +1,54 @@
-import { visit, CONTINUE, type Visitor, type VisitorResult } from "unist-util-visit";
+import { CONTINUE, visit } from "unist-util-visit";
 import type { Plugin, Transformer } from "unified";
-import type { Node, Parent } from "unist";
+import type { BlockContent, Data, Paragraph, Parent, PhrasingContent, Root, Text } from "mdast";
 import { u } from "unist-builder";
-import type { Paragraph, PhrasingContent, Root, Text } from "mdast";
 import { findAfter } from "unist-util-find-after";
 import { findAllBetween } from "unist-util-find-between-all";
 
-type TagNameFunction = (type?: string, title?: string) => string;
-type ClassNameFunction = (type?: string, title?: string) => string[];
-type PropertyFunction = (
-  type?: string,
-  title?: string,
-) => Record<string, unknown> & { className?: never };
+// eslint-disable-next-line @typescript-eslint/ban-types
+type Prettify<T> = { [K in keyof T]: T[K] } & {};
+
+// eslint-disable-next-line @typescript-eslint/ban-types
+type PartiallyRequired<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
+
+interface ContainerData extends Data {}
+
+interface Container extends Parent {
+  /**
+   * Node type of mdast Mark.
+   */
+  type: "container";
+  /**
+   * Children of paragraph.
+   */
+  children: BlockContent[];
+  /**
+   * Data associated with the mdast paragraph.
+   */
+  data?: ContainerData | undefined;
+}
+
+declare module "mdast" {
+  interface BlockContentMap {
+    container: Container;
+  }
+
+  interface RootContentMap {
+    container: Container;
+  }
+}
 
 type TitleFunction = (type?: string, title?: string) => string | null | undefined;
+type TagNameFunction = (type?: string, title?: string) => string;
+type ClassNameFunction = (type?: string, title?: string) => string[];
+type PropertyFunction = (type?: string, title?: string) => RestrictedRecord;
+type RestrictedRecord = Record<string, unknown> & { className?: never };
 
 export type FlexibleContainerOptions = {
+  title?: TitleFunction;
   containerTagName?: string | TagNameFunction;
   containerClassName?: string | ClassNameFunction;
   containerProperties?: PropertyFunction;
-  title?: TitleFunction;
   titleTagName?: string | TagNameFunction;
   titleClassName?: string | ClassNameFunction;
   titleProperties?: PropertyFunction;
@@ -28,12 +57,16 @@ export type FlexibleContainerOptions = {
 const DEFAULT_SETTINGS: FlexibleContainerOptions = {
   containerTagName: "div",
   containerClassName: "remark-container",
-  containerProperties: undefined,
-  title: undefined,
   titleTagName: "div",
   titleClassName: "remark-container-title",
-  titleProperties: undefined,
 };
+
+type PartiallyRequiredFlexibleContainerOptions = Prettify<
+  PartiallyRequired<
+    FlexibleContainerOptions,
+    "containerTagName" | "containerClassName" | "titleTagName" | "titleClassName"
+  >
+>;
 
 export const REGEX_START = /^(:{3})\s*(\w+)?\s*(.*[^ \n])?/u;
 export const REGEX_END = /\s*\n*?:::$/;
@@ -51,16 +84,21 @@ export const REGEX_BAD_SYNTAX = /^:::\s*\n+\s*:::\s*.*/;
  *
  */
 export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
-  const settings = Object.assign({}, DEFAULT_SETTINGS, options);
+  const settings = Object.assign(
+    {},
+    DEFAULT_SETTINGS,
+    options,
+  ) as PartiallyRequiredFlexibleContainerOptions;
 
   const constructTitle = (type?: string, title?: string): Paragraph | undefined => {
     const _type = type?.toLowerCase();
     const _title = title?.replace(/\s+/g, " ");
 
     const _settingsTitle = settings.title?.(_type, _title);
-    const _mainTitle = _title;
 
-    if (_settingsTitle === null || (_settingsTitle === undefined && !_mainTitle)) return;
+    if (_settingsTitle === null) return; // title node is not wanted via options
+
+    if (_settingsTitle === undefined && !_title) return;
 
     let properties: Record<string, unknown> | undefined;
 
@@ -81,16 +119,16 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     const titleTagName =
       typeof settings.titleTagName === "string"
         ? settings.titleTagName
-        : settings.titleTagName?.(_type, _title);
+        : settings.titleTagName(_type, _title);
 
     const titleClassName =
       typeof settings.titleClassName === "string"
-        ? [settings.titleClassName!, _type ?? ""]
-        : [...(settings.titleClassName?.(_type, _title) ?? [])];
+        ? [settings.titleClassName, _type ?? ""]
+        : [...(settings.titleClassName(_type, _title) ?? [])];
 
     return {
       type: "paragraph",
-      children: [{ type: "text", value: _settingsTitle || _mainTitle || "" }],
+      children: [{ type: "text", value: _settingsTitle || _title || "" }],
       data: {
         hName: titleTagName,
         hProperties: {
@@ -101,7 +139,11 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     };
   };
 
-  const constructContainer = (children: Node[], type?: string, title?: string): Parent => {
+  const constructContainer = (
+    children: BlockContent[],
+    type?: string,
+    title?: string,
+  ): Container => {
     const _type = type?.toLowerCase();
     const _title = title?.replace(/\s+/g, " ");
 
@@ -124,12 +166,12 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     const containerTagName =
       typeof settings.containerTagName === "string"
         ? settings.containerTagName
-        : settings.containerTagName?.(_type, _title);
+        : settings.containerTagName(_type, _title);
 
     const containerClassName =
       typeof settings.containerClassName === "string"
-        ? [settings.containerClassName!, _type ?? ""]
-        : [...(settings.containerClassName?.(_type, _title) ?? [])];
+        ? [settings.containerClassName, _type ?? ""]
+        : [...(settings.containerClassName(_type, _title) ?? [])];
 
     return {
       type: "container",
@@ -382,102 +424,20 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     }
   }
 
-  const visitor: Visitor<Paragraph> = function (node, index, parent): VisitorResult {
-    if (!parent) return;
-
-    const isTarget = checkIsTarget(node);
-
-    if (!isTarget) return;
-
-    let openingFlag: AnalyzeResult["flag"] | undefined = undefined;
-    let type: string | undefined = undefined;
-    let title: string | undefined = undefined;
-
-    if (node.children.length === 1) {
-      const { flag: _flag, type: _type, title: _title } = analyzeChild(node); // mutates the node
-
-      openingFlag = _flag;
-      type = _type;
-      title = _title;
-    }
-
-    if (node.children.length > 1) {
-      const { flag: _flag, type: _type, title: _title } = analyzeChildren(node); // mutates the node
-
-      openingFlag = _flag;
-      type = _type;
-      title = _title;
-    }
-
-    if (openingFlag === "complete") {
-      // means that the container starts and ends within the same paragraph node
-
-      const titleNode = constructTitle(type, title);
-
-      deleteFirstChildBreak(node); // mutates the node
-
-      const isParagraphWithEmptyText = checkParagraphWithEmptyText(node);
-
-      // is the paragraph node has only one child with empty text, don't add that paragraph node as a child
-      // meaningly, don't produce empty <p />
-      const containerChildren = isParagraphWithEmptyText
-        ? [...(titleNode ? [titleNode] : [])]
-        : [...(titleNode ? [titleNode] : []), node];
-
-      const containerNode = constructContainer(containerChildren, type, title);
-
-      // place it the place of the current paragraph node
-      parent.children.splice(index!, 1, containerNode);
-
-      return CONTINUE;
-    }
-
-    const openingNode = node;
-
-    const closingNode = findAfter(parent, openingNode, function (node) {
-      const pChildren = (node as Paragraph).children;
-
-      return (
-        node.type === "paragraph" &&
-        Boolean((pChildren[pChildren.length - 1] as Text).value?.match(REGEX_END))
-      );
-    });
-
-    if (!closingNode) return;
-
-    const closingFlag = analyzeClosingNode(closingNode as Paragraph);
-
-    const containerChildren = findAllBetween(parent, openingNode, closingNode);
-
-    if (openingFlag === "mutated") {
-      containerChildren.unshift(openingNode);
-    }
-
-    if (closingFlag === "mutated") {
-      containerChildren.push(closingNode);
-    }
-
-    // if there is no content and type do not construct the container
-
-    if (!containerChildren.length && !type) return;
-
-    // if there is no content but type, then continue to construct the container
-
-    const titleNode = constructTitle(type, title);
-
-    if (titleNode) containerChildren.splice(0, 0, titleNode);
-
-    const containerNode = constructContainer(containerChildren, type, title);
-
-    const { children } = parent;
-    const openingIndex = children.indexOf(openingNode);
-    const closingIndex = children.indexOf(closingNode);
-    children.splice(openingIndex, closingIndex - openingIndex + 1, containerNode);
-  };
+  /**
+   *
+   * type predicate function
+   */
+  function is<T>(node: any, type: string): node is T {
+    return node.type === type;
+  }
 
   const transformer: Transformer<Root> = (tree) => {
     // if a html node.value ends with "\n:::", remove and carry it into a new paragraph
-    visit(tree, "html", (node, index, parent) => {
+    visit(tree, "html", function (node, index, parent) {
+      /* istanbul ignore next */
+      if (!parent || typeof index === "undefined") return;
+
       if (!/\n:::$/.test(node.value)) return;
 
       node.value = node.value.replace(/\n:::$/, "");
@@ -485,11 +445,100 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       const p = u("paragraph", [u("text", "\n:::")]);
 
       // add the paragraph after the html node, in order to the next visitor can catch the container node
-      parent?.children.splice(index! + 1, 0, p);
+      parent.children.splice(index + 1, 0, p);
     });
 
     // main visit
-    visit(tree, "paragraph", visitor);
+    visit(tree, "paragraph", function (node, index, parent) {
+      /* istanbul ignore next */
+      if (!parent || typeof index === "undefined") return;
+
+      const isTarget = checkIsTarget(node);
+
+      if (!isTarget) return;
+
+      const { flag, type, title } =
+        node.children.length === 1
+          ? analyzeChild(node) // mutates the node
+          : analyzeChildren(node); // mutates the node
+
+      if (flag === "complete") {
+        // means that the container starts and ends within the same paragraph node
+
+        const titleNode = constructTitle(type, title);
+
+        deleteFirstChildBreak(node); // mutates the node
+
+        const isParagraphWithEmptyText = checkParagraphWithEmptyText(node);
+
+        // is the paragraph node has only one child with empty text, don't add that paragraph node as a child
+        // meaningly, don't produce empty <p />
+        const containerChildren = isParagraphWithEmptyText
+          ? [...(titleNode ? [titleNode] : [])]
+          : [...(titleNode ? [titleNode] : []), node];
+
+        const containerNode = constructContainer(containerChildren, type, title);
+
+        // place it the place of the current paragraph node
+        parent.children.splice(index, 1, containerNode);
+
+        return CONTINUE;
+      }
+
+      const openingNode = node;
+      const openingFlag = flag;
+
+      const closingNode = findAfter(parent, openingNode, function (node) {
+        if (node.type !== "paragraph") return false;
+
+        const pChildren = (node as Paragraph).children;
+        const lastChild = pChildren[pChildren.length - 1];
+
+        if (lastChild.type !== "text") return false;
+
+        return Boolean(lastChild.value.match(REGEX_END));
+      });
+
+      if (!closingNode) return;
+
+      // just for type prediction
+      if (!is<Paragraph>(closingNode, "paragraph")) return;
+
+      const closingFlag = analyzeClosingNode(closingNode); // mutates the closingNode
+
+      const containerChildren = findAllBetween(
+        parent,
+        openingNode,
+        closingNode,
+      ) as BlockContent[];
+
+      if (openingFlag === "mutated") {
+        containerChildren.unshift(openingNode);
+      }
+
+      if (closingFlag === "mutated") {
+        containerChildren.push(closingNode);
+      }
+
+      // if there is no content and type do not construct the container
+
+      if (!containerChildren.length && !type) return;
+
+      // if there is no content but type, then continue to construct the container
+
+      const titleNode = constructTitle(type, title);
+
+      if (titleNode) containerChildren.splice(0, 0, titleNode);
+
+      const containerNode = constructContainer(containerChildren, type, title);
+
+      const { children } = parent;
+      const openingIndex = children.indexOf(openingNode);
+      const closingIndex = children.indexOf(closingNode);
+      children.splice(openingIndex, closingIndex - openingIndex + 1, containerNode);
+
+      return CONTINUE;
+    });
   };
 
   return transformer;
