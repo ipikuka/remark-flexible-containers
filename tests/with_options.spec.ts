@@ -20,7 +20,7 @@ const compiler = unified()
         title,
         dummy: "", // shouldn't be added
         empty: [], // shouldn't be added
-        // className: undefined, // shouldn't be taken account
+        className: undefined, // shouldn't be taken account
       };
     },
     titleTagName: "span",
@@ -31,7 +31,7 @@ const compiler = unified()
         ["data-title"]: title?.toUpperCase(),
         dummy: "", // shouldn't be added
         empty: [], // shouldn't be added
-        // className: undefined, // shouldn't be taken account
+        className: undefined, // shouldn't be taken account
       };
     },
   })
