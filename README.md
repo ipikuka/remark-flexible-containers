@@ -20,7 +20,7 @@ This plugin is useful if you want to **add a custom container** in markdown, for
 - This plugin can add `container` node, with _custom tag name, custom class name and also additional properties_.
 - This plugin can add `title` node inside the container, if the title is provided, with _custom tag name, custom class name and also additional properties_.
 
-This plugin doesn't support yet nested containers.
+**This plugin doesn't support nested containers yet.**
 
 ## Installation
 
@@ -48,11 +48,15 @@ My paragraph with **bold text**
 :::
 ```
 
-**You don't need to put empty lines inside the container.** But, _there must be empty lines before and after the container in order to parse the markdown properly._
+> [!TIP]
+> **You don't need to put empty lines inside the container.** 
+
+> [!CAUTION]
+> **There must be empty lines before and after the container in order to parse the markdown properly.**
 
 ```markdown
 <!--- here must be empty line --->
-::: warning title
+::: warning Title
 My paragraph with **bold text**
 :::
 <!--- here must be empty line --->
@@ -83,11 +87,11 @@ async function main() {
 ```
 
 Now, running `node example.js` yields:\
-(The type is also added as a class name into the container)
+_(The `type` of the container is also added **as a class name** into the `container` node and the `title` node)_
 
 ```html
 <div class="remark-container warning">
-  <div class="remark-container-title">title</div>
+  <div class="remark-container-title warning">Title</div>
   <p>My paragraph with <strong>bold text</strong></p>
 </div>
 ```
@@ -95,7 +99,7 @@ Now, running `node example.js` yields:\
 Without `remark-flexible-containers`, you’d get:
 
 ```html
-<p>::: warning title
+<p>::: warning Title
 My paragraph with <strong>bold text</strong>
 :::</p>
 ```
@@ -104,61 +108,422 @@ My paragraph with <strong>bold text</strong>
 
 All options are **optional** and have **default values**.
 
-```javascript
-/* the type definitions in the package
+```typescript
+type RestrictedRecord = Record<string, unknown> & { className?: never };
 type TagNameFunction = (type?: string, title?: string) => string;
 type ClassNameFunction = (type?: string, title?: string) => string[];
-type PropertyFunction = (type?: string, title?: string) => Record<string, unknown>;
+type PropertyFunction = (type?: string, title?: string) => RestrictedRecord;
 type TitleFunction = (type?: string, title?: string) => string | null | undefined;
-*/
 
-// create flexible container options object
-const flexibleContainerOptions: FlexibleContainerOptions = {
+use(remarkFlexibleContainers, {
   containerTagName?: string | TagNameFunction; // default is "div"
   containerClassName?: string | ClassNameFunction; // default is "remark-container"
-  containerProperties?: PropertyFunction; // default is undefined
-  title?: TitleFunction; // default is undefined
+  containerProperties?: PropertyFunction;
+  title?: TitleFunction;
   titleTagName?: string | TagNameFunction; // default is "div"
   titleClassName?: string | ClassNameFunction; // // default is "remark-container-title"
-  titleProperties?: PropertyFunction; // default is undefined
-};
-
-// use these options like below
-use(remarkFlexibleContainers, flexibleContainerOptions)
+  titleProperties?: PropertyFunction;
+} as FlexibleContainerOptions);
 ```
 
 #### `containerTagName`
 
-It is a **string | (type?: string, title?: string) => string** option for providing custom HTML tag name for the `container` node other than default `div`.
+It is a **string** or a **callback** `(type?: string, title?: string) => string` option for providing custom HTML tag name for the `container` node.
+
+By default, it is `div`.
+
+```javascript
+use(remarkFlexibleContainers, {
+  containerTagName: "section";
+});
+```
+
+Now, the container tag names will be `section`.
+
+```html
+<section class="...">
+  <!-- ... -->
+</section>
+```
+
+The option can take also a callback function, which has two optional arguments `type` and `title`, and returns **string** representing a **custom tag name**. 
+
+```javascript
+use(remarkFlexibleContainers, {
+  containerTagName: (type, title) => {
+    return type === "details" ? "details" : "div";
+  }
+});
+```
+
+Now, the container tag names will be `div` or `details`. It is a good start for creating `details-summary` HTML elements in markdown.
+
+```markdown
+::: details Title
+<!-- ... -->
+:::
+
+::: warning Title
+<!-- ... -->
+:::
+```
+
+```html
+<details class="...">
+  <!-- ... -->
+</details>
+<div class="...">
+  <!-- ... -->
+</div>
+```
 
 #### `containerClassName`
 
-It is a **string | (type?: string, title?: string) => string[]** option for providing custom className(s) for the `container` node other than default `remark-container`. If you provide a **string** value or don't provide an option, the package adds the type of the container into classNames. But, if you provide a **callback function** it is your responsibility to add the type of the container or not into classNames.
+It is a **string** or a **callback** `(type?: string, title?: string) => string[]` option for providing custom class name for the `container` node. 
+
+By default, it is `remark-container`, and all container nodes' classnames will contain `remark-container`.
+
+A container node contains also a **secondary class name** representing the **type** of the container, like `warning` or `info`. If there is no `type` of the container, then the secondary class name will not present.
+
+```markdown
+::: danger Title
+<!-- ... -->
+:::
+```
+
+```html
+<div class="remark-container danger">
+  <!-- ... -->
+</div>
+```
+
+```javascript
+use(remarkFlexibleContainers, {
+  containerClassName: "custom-container";
+});
+```
+
+Now, the container nodes will have `custom-container` as a className, and the secondary class names will be the `type` of the container, if exists.
+
+```markdown
+::: danger Title
+<!-- ... -->
+:::
+```
+
+```html
+<div class="custom-container danger">
+  <!-- ... -->
+</div>
+```
+
+The option can take also a callback function, which has two optional arguments `type` and `title`, and returns **array of strings** representing **class names**. 
+
+```javascript
+use(remarkFlexibleContainers, {
+  containerClassName: (type, title) => {
+    return [`remark-container-${type ?? "note"}`]
+  };
+});
+```
+
+Now, the container class names **will contain only one class name** like `remark-container-warning`, `remark-container-note` etc.
+
+```markdown
+:::
+<!-- ... -->
+:::
+```
+
+```html
+<div class="remark-container-note">
+  <!-- ... -->
+</div>
+```
+
+> [!WARNING]
+> **If you use the `containerClassName` option as a callback function, it is your responsibility to define class names, add the type of the container into class names etc. in an array.**
 
 #### `containerProperties`
 
-It is **(type?: string, title?: string) => Record<string, unknown>** option to set additional properties for the `container` node. It is a callback function that takes the `type` and the `title` as optional arguments and returns the object which is going to be used for adding additional properties into the `container` node.
+It is a **callback** `(type?: string, title?: string) => Record<string, unknown> & { className?: never }` option to set additional properties for the `container` node. 
+
+The callback function that takes the `type` and the `title` as optional arguments and returns **object** which is going to be used for adding additional properties into the `container` node.
+
+**The `className` key is forbidden and effectless in the returned object.**
+
+```javascript
+use(remarkFlexibleContainers, {
+  containerProperties(type, title) {
+    return {
+      ["data-type"]: type,
+      ["data-title"]: title,
+    };
+  },
+});
+```
+
+Now, the container nodes which have a type and a title will contain `data-type` and `data-title` properties.
+
+```markdown
+::: danger Title
+<!-- ... -->
+:::
+```
+
+```html
+<div class="remark-container danger" data-type="danger" data-title="Title">
+  <!-- ... -->
+</div>
+```
 
 #### `title`
 
-It is a **(type?: string, title?: string) => string | null | undefined** option to set the title with a callback function. The callback function takes the `type` and the `title` as optional arguments and returns **string | null | undefined**. **If it returns null** `title: () => null`, the plugin will not add the `title` node. Default is `undefined`, which adds a `title` node if a title is provided in markdown.
+It is a **callback** `(type?: string, title?: string) => string | null | undefined` option to set the title with a callback function.
+
+The `remark-flexible-containers` adds a `title` node normally if a title is provided in markdown.
+
+```markdown
+::: danger Title
+<!-- ... -->
+:::
+```
+
+```html
+<div class="remark-container danger">
+  <div class="remark-container-title">Title</div>
+  <!-- ... -->
+</div>
+```
+
+if the callback function returns **null** `title: () => null`, the plugin will not add the `title` node.
+
+```javascript
+use(remarkFlexibleContainers, {
+  title: () => null,
+});
+```
+
+```html
+<div class="remark-container danger">
+  <!-- There will be NO title node -->
+  <!-- ... -->
+</div>
+```
+
+The callback function takes the `type` and the `title` as optional arguments and returns **string | null | undefined**. For example if there is no title you would want the title is the type of the container as a fallback.
+
+```javascript
+use(remarkFlexibleContainers, {
+  title: (type, title) => {
+    return title ?? type ? type.charAt(0).toUpperCase() + type.slice(1) : "Fallback Title";
+  },
+});
+```
+
+```markdown
+::: info Title
+<!-- ... -->
+:::
+
+::: info
+<!-- ... -->
+:::
+
+:::
+<!-- ... -->
+:::
+```
+
+```html
+<div class="remark-container info">
+  <div class="remark-container-title info">Title</div>
+  <!-- ... -->
+</div>
+<div class="remark-container info">
+  <div class="remark-container-title info">Info</div>
+  <!-- ... -->
+</div>
+<div class="remark-container">
+  <div class="remark-container-title">Fallback Title</div>
+  <!-- ... -->
+</div>
+```
 
 #### `titleTagName`
 
-It is a **string | (type?: string, title?: string) => string** option for providing custom HTML tag name for the `title` node other than default `div`.
+It is a **string** or a **callback** `(type?: string, title?: string) => string` option for providing custom HTML tag name for the `title` node.
+
+By default, it is `div`.
+
+```javascript
+use(remarkFlexibleContainers, {
+  titleTagName: "span";
+});
+```
+
+Now, the title tag names will be `span`.
+
+```html
+<div class="...">
+  <span class="...">Title</span>
+  <!-- ... -->
+</div>
+```
+
+The option can take also a callback function, which has two optional arguments `type` and `title`, and returns **string** representing a **custom tag name**.
+
+```javascript
+use(remarkFlexibleContainers, {
+  containerTagName: (type, title) => {
+    return type === "details" ? "details" : "div";
+  },
+  titleTagName: (type, title) => {
+    return type === "details" ? "summary" : "span";
+  }
+});
+```
+
+Now, the container tag names will be `span` or `summary`. It is a good complementary for creating `details-summary` HTML elements in markdown.
+
+```markdown
+::: details Title
+<!-- ... -->
+:::
+
+::: warning Title
+<!-- ... -->
+:::
+```
+
+```html
+<details class="...">
+  <summary class="...">Title</summary>
+  <!-- ... -->
+</details>
+<div class="...">
+  <span class="...">Title</span>
+  <!-- ... -->
+</div>
+```
 
 #### `titleClassName`
 
-It is a **string | (type?: string, title?: string) => string[]** option for providing custom className(s) for the `title` node other than default `remark-container-title`. If you provide a **string** value or don't provide an option, the package adds the type of the container into classNames. But, if you provide a **callback function** it is your responsibility to add the type of the container or not into classNames.
+It is a **string** or a **callback** `(type?: string, title?: string) => string[]` option for providing custom class name for the `title` node.
+
+By default, it is `remark-container-title`, and all title nodes'  classnames will contain `remark-container-title`.
+
+A title node contains also a **secondary class name** representing the **type** of the container, like `warning` or `info`. If there is no `type` of the container, then the secondary class name will not present.
+
+```markdown
+::: danger Title
+<!-- ... -->
+:::
+```
+
+```html
+<div class="...">
+  <div class="remark-container-title danger">Title</div>
+  <!-- ... -->
+</div>
+```
+
+```javascript
+use(remarkFlexibleContainers, {
+  titleClassName: "custom-container-title";
+});
+```
+
+Now, the title nodes will have `custom-container-title` as a className, and the secondary class names will be the `type` of the container, if exists.
+
+```markdown
+::: danger Title
+<!-- ... -->
+:::
+```
+
+```html
+<div class="...">
+  <div class="custom-container-title danger">Title</div>
+  <!-- ... -->
+</div>
+```
+
+The option can take also a callback function, which has two optional arguments `type` and `title`, and returns **array of strings** representing **class names**. 
+
+```javascript
+use(remarkFlexibleContainers, {
+  titleClassName: (type, title) => {
+    return type ? [`container-title-${type}`] : ["container-title"]
+  };
+});
+```
+
+Now, the container class names **will contain only one class name** like `container-title-warning`, `container-title` etc.
+
+```markdown
+::: tip Title
+<!-- ... -->
+:::
+
+:::
+<!-- ... -->
+:::
+```
+
+```html
+<div class="...">
+  <div class="container-title-tip">Title</div>
+  <!-- ... -->
+</div>
+
+<div class="...">
+  <!-- No title node because there is no title in the second container
+   and no fallback title with `title` option  -->
+  <!-- ... -->
+</div>
+```
+
+> [!WARNING]
+> **If you use the `titleClassName` option as a callback function, it is your responsibility to define class names, add the type of the container into class names etc. in an array.**
 
 #### `titleProperties`
 
-It is a **(type?: string, title?: string) => Record<string, unknown>** option to set additional properties for the `title` node. It is a callback function that takes the `type` and the `title` as optional arguments and returns the object which is going to be used for adding additional properties into the `title` node.
+It is a **callback** `(type?: string, title?: string) => Record<string, unknown> & { className?: never }` option to set additional properties for the `title` node. 
+
+The callback function that takes the `type` and the `title` as optional arguments and returns **object** which is going to be used for adding additional properties into the `title` node.
+
+**The `className` key is forbidden and effectless in the returned object.**
+
+```javascript
+use(remarkFlexibleContainers, {
+  titleProperties(type, title) {
+    return {
+      ["data-type"]: type,
+    };
+  },
+});
+```
+
+Now, the title nodes which have a type will contain `data-type` property.
+
+```markdown
+::: danger Title
+<!-- ... -->
+:::
+```
+
+```html
+<div class="...">
+  <div class="..." data-type="danger">Title</div>
+  <!-- ... -->
+</div>
+```
 
 ## Examples:
 
 ```markdown
-::: info My Title
+::: info The Title of Information
 Some information
 :::
 ```
@@ -173,7 +538,7 @@ is going to produce as default:
 
 ```html
 <div class="remark-container info">
-  <div class="remark-container-title">My Title</div>
+  <div class="remark-container-title info">The Title of Information</div>
   <p>Some information</p>
 </div>
 ```
@@ -186,7 +551,7 @@ use(remarkFlexibleContainers, {
 });
 ```
 
-is going to produce the container without title (even if the the title is provided in markdown):
+is going to produce the container without title node (even if the the title is provided in markdown):
 
 ```html
 <div class="remark-container info">
@@ -218,8 +583,8 @@ use(remarkFlexibleContainers, {
 is going to produce the container `section` element like below:
 
 ```html
-<section class="remark-custom-wrapper info" data-type="info" data-title="My Title">
-  <span class="remark-custom-wrapper-title" data-type="info">MY TITLE</span>
+<section class="remark-custom-wrapper info" data-type="info" data-title="The Title of Information">
+  <span class="remark-custom-wrapper-title info" data-type="info">THE TITLE OF INFORMATION</span>
   <p>Some information</p>
 </section>
 ```
@@ -229,35 +594,41 @@ is going to produce the container `section` element like below:
 ```javascript
 use(remarkFlexibleContainers, {
   containerTagName(type) {
-    return type ? "section" : "div";
+    return type === "details" ? "details" : "div";
   },
   containerClassName(type) {
-    return type
-      ? [`remark-custom-container-${type}`]
-      : ["remark-custom-container", "typeless"];
-  },
-  containerProperties(type, title) {
-    return {
-      ["data-type"]: type,
-      ["data-title"]: title,
-    };
-  },
-  title: (type, title) => {
-    return title ? toTitleCase(title) : type ? toTitleCase(type) : "Fallback Title";
+    return type === "details" ? ["remark-details"] : ["remark-container", type ?? ""];
   },
   titleTagName(type) {
-    return type ? "h2" : "span";
+    return type === "details" ? "summary" : "span";
   },
   titleClassName(type) {
-    return type ? [`remark-custom-title-${type}`] : ["remark-custom-title", "typeless"];
-  },
-  titleProperties: (type, title) => {
-    return {
-      ["data-type"]: type,
-      ["data-title"]: title?.toUpperCase(),
-    };
+    return type === "details" ? ["remark-summary"] : ["remark-container-title", type ?? ""];
   },
 });
+```
+
+With above options you can create `details-summary` HTML element in addition to containers easily if you provide the type of the container as `details`.
+
+```markdown
+::: details Title
+Some information
+:::
+
+::: warning Title
+Some information
+:::
+```
+
+```html
+<details class="remark-details">
+  <summary class="remark-summary">Title</summary>
+  <p>Some information</p>
+</details>
+<div class="remark-container warning">
+  <span class="remark-container warning">Title</span>
+  <p>Some information</p>
+</div>
 ```
 
 #### Without a type and a title
@@ -270,7 +641,7 @@ Some information
 :::
 ```
 
-It will not add a `title` node since it is not provided (assume that the `title` option is not provided as well), and it will also not add the type as a classname into the container:
+It will not add a `title` node since it is not provided (assume that `title` option is not provided for a fallback title, as well), and it will also not add the type as a classname into the container:
 
 ```html
 <div class="remark-container">
@@ -278,17 +649,17 @@ It will not add a `title` node since it is not provided (assume that the `title`
 </div>
 ```
 
-**The flexible container can contain also html elements and mdx components:**
+**The flexible container can contain also HTML elements and MDX components:**
 
 ```markdown
-::: danger My Title
-My name is **talatkuyuk** AKA ipikuka
-this package is _so cool and flexible_
+::: tip Title
+This package is so _**cool** and **flexible**_
 
 ::it does not confuse with double colons::
 
-<mark>marked text</mark>
-<MarkRed>custom marker</MarkRed>
+==marked text via plugin `remark-flexible-markers`==
+<mark>marked text via HTML element in markdown</mark>
+<MarkRed>marked text via custom marker in support of MDX</MarkRed>
 
 <details>
   <summary>HTML tag works too</summary>
@@ -351,15 +722,15 @@ I like to contribute the Unified / Remark / MDX ecosystem, so I recommend you to
 
 ## License
 
-[MIT][license] © ipikuka
+[MIT License](./LICENSE) © ipikuka
 
 ### Keywords
 
-🟩 [unified][unifiednpm] 🟩 [remark][remarknpm] 🟩 [remark-plugin][remarkpluginsnpm] 🟩 [mdast][mdastnpm] 🟩 [markdown][markdownnpm] 🟩 [remark custom container][remarkcontainernpm]
+🟩 [unified][unifiednpm] 🟩 [remark][remarknpm] 🟩 [remark plugin][remarkpluginnpm] 🟩 [mdast][mdastnpm] 🟩 [markdown][markdownnpm] 🟩 [remark container][remarkcontainernpm]
 
 [unifiednpm]: https://www.npmjs.com/search?q=keywords:unified
 [remarknpm]: https://www.npmjs.com/search?q=keywords:remark
-[remarkpluginsnpm]: https://www.npmjs.com/search?q=keywords:remark%20plugin
+[remarkpluginnpm]: https://www.npmjs.com/search?q=keywords:remark%20plugin
 [mdastnpm]: https://www.npmjs.com/search?q=keywords:mdast
 [markdownnpm]: https://www.npmjs.com/search?q=keywords:markdown
 [remarkcontainernpm]: https://www.npmjs.com/search?q=keywords:remark%20container
