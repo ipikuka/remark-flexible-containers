@@ -119,11 +119,12 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       Object.entries(properties).forEach(([k, v]) => {
         if (
           (typeof v === "string" && v === "") ||
-          (Array.isArray(v) && (v as unknown[]).length === 0) ||
-          k === "className"
+          (Array.isArray(v) && (v as unknown[]).length === 0)
         ) {
           properties && (properties[k] = undefined);
         }
+
+        if (k === "className") delete properties?.["className"];
       });
     }
 
@@ -166,11 +167,12 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       Object.entries(properties).forEach(([k, v]) => {
         if (
           (typeof v === "string" && v === "") ||
-          (Array.isArray(v) && (v as unknown[]).length === 0) ||
-          k === "className"
+          (Array.isArray(v) && (v as unknown[]).length === 0)
         ) {
           properties && (properties[k] = undefined);
         }
+
+        if (k === "className") delete properties?.["className"];
       });
     }
 
