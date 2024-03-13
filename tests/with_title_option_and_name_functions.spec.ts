@@ -1,12 +1,7 @@
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import gfm from "remark-gfm";
-import remarkRehype from "remark-rehype";
-import rehypeStringify from "rehype-stringify";
 import dedent from "dedent";
-import type { VFileCompatible } from "vfile";
 
-import plugin from "../src";
+import { type FlexibleContainerOptions } from "../src";
+import { process } from "./util/index";
 
 /**
  * Returns the Title Case of a given string
@@ -17,45 +12,34 @@ function toTitleCase(str: string) {
   });
 }
 
-const compiler = unified()
-  .use(remarkParse)
-  .use(gfm)
-  .use(plugin, {
-    containerTagName(type) {
-      return type ? "section" : "div";
-    },
-    containerClassName(type) {
-      return type
-        ? [`remark-custom-container-${type}`]
-        : ["remark-custom-container", "typeless"];
-    },
-    containerProperties(type, title) {
-      return {
-        ["data-type"]: type,
-        ["data-title"]: title,
-      };
-    },
-    title: (type, title) => {
-      return title ? toTitleCase(title) : type ? toTitleCase(type) : "Generic Title";
-    },
-    titleTagName(type) {
-      return type ? "h2" : "span";
-    },
-    titleClassName(type) {
-      return type ? [`remark-custom-title-${type}`] : ["remark-custom-title", "typeless"];
-    },
-    titleProperties: (type, title) => {
-      return {
-        ["data-type"]: type,
-        ["data-title"]: title?.toUpperCase(),
-      };
-    },
-  })
-  .use(remarkRehype)
-  .use(rehypeStringify);
-
-const process = async (contents: VFileCompatible): Promise<VFileCompatible> => {
-  return compiler.process(contents).then((file) => file.value);
+const options: FlexibleContainerOptions = {
+  containerTagName(type) {
+    return type ? "section" : "div";
+  },
+  containerClassName(type) {
+    return type ? [`remark-custom-container-${type}`] : ["remark-custom-container", "typeless"];
+  },
+  containerProperties(type, title) {
+    return {
+      ["data-type"]: type,
+      ["data-title"]: title,
+    };
+  },
+  title: (type, title) => {
+    return title ? toTitleCase(title) : type ? toTitleCase(type) : "Generic Title";
+  },
+  titleTagName(type) {
+    return type ? "h2" : "span";
+  },
+  titleClassName(type) {
+    return type ? [`remark-custom-title-${type}`] : ["remark-custom-title", "typeless"];
+  },
+  titleProperties: (type, title) => {
+    return {
+      ["data-type"]: type,
+      ["data-title"]: title?.toUpperCase(),
+    };
+  },
 };
 
 describe("with options - fail", () => {
@@ -67,7 +51,7 @@ describe("with options - fail", () => {
       :::
     `;
 
-    expect(await process(input)).toMatchInlineSnapshot(`
+    expect(await process(input, options)).toMatchInlineSnapshot(`
       "<p>:::</p>
       <p>:::</p>"
     `);
@@ -81,7 +65,7 @@ describe("with options - fail", () => {
         ::: tip
       `;
 
-    expect(await process(input)).toMatchInlineSnapshot(`
+    expect(await process(input, options)).toMatchInlineSnapshot(`
       "<p>:::</p>
       <p>::: tip</p>"
     `);
@@ -99,7 +83,7 @@ describe("with options - success", () => {
       :::
     `;
 
-    expect(await process(input)).toMatchInlineSnapshot(
+    expect(await process(input, options)).toMatchInlineSnapshot(
       `"<div class="remark-custom-container typeless"><span class="remark-custom-title typeless">Generic Title</span><p>content</p></div>"`,
     );
   });
@@ -112,7 +96,7 @@ describe("with options - success", () => {
       :::
     `;
 
-    expect(await process(input)).toMatchInlineSnapshot(
+    expect(await process(input, options)).toMatchInlineSnapshot(
       `"<section class="remark-custom-container-info" data-type="info"><h2 class="remark-custom-title-info" data-type="info">Info</h2></section>"`,
     );
   });
@@ -127,7 +111,7 @@ describe("with options - success", () => {
       :::
     `;
 
-    expect(await process(input)).toMatchInlineSnapshot(
+    expect(await process(input, options)).toMatchInlineSnapshot(
       `"<section class="remark-custom-container-danger" data-type="danger"><h2 class="remark-custom-title-danger" data-type="danger">Danger</h2><p>content</p></section>"`,
     );
   });
@@ -142,7 +126,7 @@ describe("with options - success", () => {
       :::
     `;
 
-    expect(await process(input)).toMatchInlineSnapshot(
+    expect(await process(input, options)).toMatchInlineSnapshot(
       `"<section class="remark-custom-container-danger" data-type="danger" data-title="Title"><h2 class="remark-custom-title-danger" data-type="danger" data-title="TITLE">Title</h2><p>content</p></section>"`,
     );
   });
@@ -157,7 +141,7 @@ describe("with options - success", () => {
         :::
       `;
 
-    expect(await process(input)).toMatchInlineSnapshot(
+    expect(await process(input, options)).toMatchInlineSnapshot(
       `"<section class="remark-custom-container-danger" data-type="danger" data-title="My Title"><h2 class="remark-custom-title-danger" data-type="danger" data-title="MY TITLE">My Title</h2><p>content</p></section>"`,
     );
   });
@@ -174,7 +158,7 @@ describe("with options - success", () => {
         :::
       `;
 
-    expect(await process(input)).toMatchInlineSnapshot(
+    expect(await process(input, options)).toMatchInlineSnapshot(
       `"<section class="remark-custom-container-danger" data-type="danger" data-title="title"><h2 class="remark-custom-title-danger" data-type="danger" data-title="TITLE">Title</h2><p><strong>bold text</strong> paragraph</p><p>other paragraph <em>italic content</em></p></section>"`,
     );
   });
