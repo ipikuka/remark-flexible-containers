@@ -750,6 +750,8 @@ There are two groups of identifiers. Each group is optional, may present or not.
 ::: info Title {span#baz.someclass}
 ```
 
+You should consider that **specific identifiers for `title` breaks the option `title: () => null`**, and the title will take place for that individual container.
+
 ## Syntax tree
 
 This plugin only modifies the mdast (markdown abstract syntax tree) as explained.

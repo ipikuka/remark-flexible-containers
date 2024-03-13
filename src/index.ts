@@ -112,7 +112,8 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
     const _settingsTitle = settings.title?.(_type, _title);
 
-    if (_settingsTitle === null) return; // title node is not wanted via options
+    // if the option is `title: () => null`, then return; but props breaks the rule !
+    if (!props && _settingsTitle === null) return;
 
     const mainTitle = _settingsTitle || _title;
 
