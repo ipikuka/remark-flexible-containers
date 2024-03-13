@@ -1,6 +1,7 @@
 # remark-flexible-containers
 
-[![NPM version][badge-npm]][npm-package-url]
+[![NPM version][badge-npm-version]][npm-package-url]
+[![NPM downloads][badge-npm-download]][npm-package-url]
 [![Build][badge-build]][github-workflow-url]
 [![codecov](https://codecov.io/gh/ipikuka/remark-flexible-containers/graph/badge.svg?token=XWTU29ESSO)](https://codecov.io/gh/ipikuka/remark-flexible-containers)
 [![type-coverage](https://img.shields.io/badge/dynamic/json.svg?label=type-coverage&prefix=%E2%89%A5&suffix=%&query=$.typeCoverage.atLeast&uri=https%3A%2F%2Fraw.githubusercontent.com%2Fipikuka%2Fremark-flexible-containers%2Fmaster%2Fpackage.json)](https://github.com/ipikuka/remark-flexible-containers)
@@ -103,6 +104,29 @@ Without `remark-flexible-containers`, you’d get:
 My paragraph with <strong>bold text</strong>
 :::</p>
 ```
+
+## It is more flexible and powerful
+
+### ::: [type] [{tagname#id.classname}] [title] [{tagname#id.classname}]
+
+As of version `^1.2.0`, the `remark-flexible-containers` supports syntax for specific identifiers (`tagname`, `id`, `classnames`) **for individual `container` and `title` node.** For example:
+
+``` markdown
+::: info {section#foo.myclass} Title Of Information {span#baz.someclass}
+<!-- content -->
+:::
+```
+
+```html
+<section class="remark-container info myclass" id="foo">
+  <span class="remark-container-title info someclass" id="baz">
+    Title Of Information
+  </span>
+  <!-- content -->
+</section>
+```
+
+For more information, go to [detailed explanation](#support-for-specific-identifiers) placed after the "options" and "examples" section.
 
 ## Options
 
@@ -671,6 +695,61 @@ some **bold content** without stress
 :::
 ```
 
+## Support for Specific Identifiers
+
+### ::: [type] [{tagname#id.classname}] [title] [{tagname#id.classname}]
+
+As of version `^1.2.0`, the `remark-flexible-containers` supports syntax for specific identifiers (`tagname`, `id`, `classnames`) **for individual `container` and `title` node.** For example:
+
+``` markdown
+::: info {section#foo.myclass} Title Of Information {span#baz.someclass}
+<!-- content -->
+:::
+```
+
+```html
+<section class="remark-container info myclass" id="foo">
+  <span class="remark-container-title info someclass" id="baz">
+    Title Of Information
+  </span>
+  <!-- content -->
+</section>
+```
+The Identifiers (`tagname`, `id`, `classnames`) **must be inside curly braces**. 
+
+Syntax is very simple.
++ `tagname` is to be compatible HTML tag name, and may present only once,
++ `id` is to start with hash **`#`**, and may present only once,
++ `classnames` are to start with dot **`.`**, and may present many.
+
+> [!TIP]
+> **These identifiers can be placed as all three, any two, or just any of them in the desired order, with or without a space between them.**
+
+**The first group of identifiers** _(just after the type)_ is for `container` node.\
+**The second group of identifiers** _(just after the title)_ is for `title` node.\
+Each group is optional, may present or not.
+
+Here are some example usage. *For simplicity*, I omitted the container contents and ending syntax, just put the beginning syntax in the examples. **All are valid usage for specific identifiers.**
+
+```markdown
+::: info {section#foo.myclass.second-class} Title {span#baz.someclass.other-class}
+::: info {section#foo.myclass} Title {span#baz.someclass}
+::: info {section #foo .myclass .second-class} Title {span #baz .someclass .other-class}
+::: info {section #foo .myclass} Title {span #baz .someclass}
+::: info {section.myclass#foo} Title {span.someclass#baz}
+::: info {.myclass#foo} Title {.someclass#baz}
+::: info {.myclass #foo} Title {.someclass #baz}
+::: info {.myclass #foo section} Title {.someclass #baz span}
+::: info {#foo section} Title {#baz span}
+::: info {.myclass} Title {#baz}
+::: info {#foo} Title {.someclass}
+::: info {#foo} Title
+::: info {#foo}
+::: info {section#foo.myclass}
+::: info Title {.someclass}
+::: info Title {span#baz.someclass}
+```
+
 ## Syntax tree
 
 This plugin only modifies the mdast (markdown abstract syntax tree) as explained.
@@ -743,7 +822,8 @@ I like to contribute the Unified / Remark / MDX ecosystem, so I recommend you to
 [rehypeprismplus]: https://github.com/timlrx/rehype-prism-plus
 [typescript]: https://www.typescriptlang.org/
 
-[badge-npm]: https://img.shields.io/npm/v/remark-flexible-containers
+[badge-npm-version]: https://img.shields.io/npm/v/remark-flexible-containers
+[badge-npm-download]:https://img.shields.io/npm/dt/remark-flexible-containers
 [npm-package-url]: https://www.npmjs.com/package/remark-flexible-containers
 
 [badge-license]: https://img.shields.io/github/license/ipikuka/remark-flexible-containers

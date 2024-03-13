@@ -81,6 +81,9 @@ export const REGEX_START = /^(:{3})\s*(\w+)?\s*(.*[^ \n])?/u;
 export const REGEX_END = /\s*\n*?:::$/;
 export const REGEX_BAD_SYNTAX = /^:::\s*\n+\s*:::\s*.*/;
 
+// to find custom parts in curly braces --> {article#foo} Title {span.bar}
+export const REGEX_CUSTOM = /(\{[^{}]*\})?(\s*[^{}]*\s*)?(\{[^{}]*\})?/u;
+
 /**
  *
  * This plugin adds container node with customizable properties in order to produce container element like callouts and admonitions
@@ -99,7 +102,11 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     options,
   ) as PartiallyRequiredFlexibleContainerOptions;
 
-  const constructTitle = (type?: string, title?: string): Paragraph | undefined => {
+  const constructTitle = (
+    type?: string,
+    title?: string,
+    props?: string[],
+  ): Paragraph | undefined => {
     const _type = type?.toLowerCase();
     const _title = title?.replace(/\s+/g, " ");
 
@@ -110,6 +117,11 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     const mainTitle = _settingsTitle || _title;
 
     if (!mainTitle) return;
+
+    // props may contain a tagname, an id and a classname specific to this title node
+    const specificTagName = props?.filter((p) => /^[^#.]/.test(p))?.[0];
+    const specificId = props?.filter((p) => p.startsWith("#"))?.[0]?.slice(1);
+    const specificClassName = props?.filter((p) => p.startsWith("."))?.map((p) => p.slice(1));
 
     let properties: Record<string, unknown> | undefined;
 
@@ -142,10 +154,11 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       type: "paragraph",
       children: [{ type: "text", value: mainTitle }],
       data: {
-        hName: titleTagName,
+        hName: specificTagName ?? titleTagName,
         hProperties: {
-          className: titleClassName,
+          className: [...titleClassName, ...(specificClassName ?? [])],
           ...(properties && { ...properties }),
+          ...(specificId && { id: specificId }),
         },
       },
     };
@@ -155,9 +168,15 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     children: BlockContent[],
     type?: string,
     title?: string,
+    props?: string[],
   ): Container => {
     const _type = type?.toLowerCase();
     const _title = title?.replace(/\s+/g, " ");
+
+    // props may contain a tagname, an id and a classname specific to this container node
+    const specificTagName = props?.filter((p) => /^[^#.]/.test(p))?.[0];
+    const specificId = props?.filter((p) => p.startsWith("#"))?.[0]?.slice(1);
+    const specificClassName = props?.filter((p) => p.startsWith("."))?.map((p) => p.slice(1));
 
     let properties: Record<string, unknown> | undefined;
 
@@ -190,14 +209,59 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       type: "container",
       children,
       data: {
-        hName: containerTagName,
+        hName: specificTagName ?? containerTagName,
         hProperties: {
-          className: containerClassName,
+          className: [...containerClassName, ...(specificClassName ?? [])],
           ...(properties && { ...properties }),
+          ...(specificId && { id: specificId }),
         },
       },
     };
   };
+
+  // Define a custom string method
+  String.prototype.normalize = function () {
+    return this?.replace(/[{}]/g, "")
+      .replace(".", " .")
+      .replace("#", " #")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
+  /**
+   * the matched title may contain additional props for container and title node
+   * in curly braces like: {section#foo} Title {span.bar}
+   *
+   */
+  function getCustomProps(input?: string): {
+    containerProps: string[] | undefined;
+    title: string | undefined;
+    titleProps: string[] | undefined;
+  } {
+    if (!input) return { containerProps: undefined, title: undefined, titleProps: undefined };
+
+    const match = input.match(REGEX_CUSTOM);
+
+    /* istanbul ignore next */
+    // eslint-disable-next-line
+    let [input_, containerFixture, mainTitle, titleFixture] = match ?? [undefined];
+
+    containerFixture = containerFixture?.normalize();
+
+    const containerProps =
+      containerFixture && containerFixture !== "" ? containerFixture?.split(" ") : undefined;
+
+    titleFixture = titleFixture?.normalize();
+
+    const titleProps =
+      titleFixture && titleFixture !== "" ? titleFixture?.split(" ") : undefined;
+
+    mainTitle = mainTitle?.normalize();
+
+    mainTitle = mainTitle === "" ? undefined : mainTitle;
+
+    return { containerProps, title: mainTitle, titleProps };
+  }
 
   /**
    *
@@ -224,7 +288,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
   type AnalyzeResult = {
     flag: "complete" | "mutated" | "regular";
     type?: string;
-    title?: string;
+    rawtitle?: string;
   };
 
   /**
@@ -241,7 +305,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     let nIndex: number | undefined = undefined; // for newline "\n" character
 
     if (!textElement.value.includes("\n")) {
-      // It is regular container, meaningly, there is a blank line after the start marker ":::"
+      // It is regular container, meaningly, there is a blank line before the start marker ":::"
       const match = textElement.value.match(REGEX_START);
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -290,7 +354,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       textElement.value = value;
     }
 
-    return { flag, type, title };
+    return { flag, type, rawtitle: title };
   }
 
   /**
@@ -371,7 +435,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     // mutate the current paragraph children
     node.children = paragraphChildren;
 
-    return { flag, type, title };
+    return { flag, type, rawtitle: title };
   }
 
   /**
@@ -466,15 +530,17 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
       if (!isTarget) return;
 
-      const { flag, type, title } =
+      const { flag, type, rawtitle } =
         node.children.length === 1
           ? analyzeChild(node) // mutates the node
           : analyzeChildren(node); // mutates the node
 
+      const { containerProps, title, titleProps } = getCustomProps(rawtitle?.trim());
+
       if (flag === "complete") {
         // means that the container starts and ends within the same paragraph node
 
-        const titleNode = constructTitle(type, title);
+        const titleNode = constructTitle(type, title, titleProps);
 
         deleteFirstChildBreak(node); // mutates the node
 
@@ -486,7 +552,12 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
           ? [...(titleNode ? [titleNode] : [])]
           : [...(titleNode ? [titleNode] : []), node];
 
-        const containerNode = constructContainer(containerChildren, type, title);
+        const containerNode = constructContainer(
+          containerChildren,
+          type,
+          title,
+          containerProps,
+        );
 
         // place it the place of the current paragraph node
         parent.children.splice(index, 1, containerNode);
@@ -536,11 +607,11 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
       // if there is no content but type, then continue to construct the container
 
-      const titleNode = constructTitle(type, title);
+      const titleNode = constructTitle(type, title, titleProps);
 
       if (titleNode) containerChildren.splice(0, 0, titleNode);
 
-      const containerNode = constructContainer(containerChildren, type, title);
+      const containerNode = constructContainer(containerChildren, type, title, containerProps);
 
       const { children } = parent;
       const openingIndex = children.indexOf(openingNode);
