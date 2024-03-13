@@ -715,21 +715,21 @@ As of version `^1.2.0`, the `remark-flexible-containers` supports syntax for spe
   <!-- content -->
 </section>
 ```
-The Identifiers (`tagname`, `id`, `classnames`) **must be inside curly braces**. 
+The identifiers (`tagname`, `id`, `classnames`) **must be inside curly braces**. 
 
 Syntax is very simple.
 + `tagname` is to be compatible HTML tag name, and may present only once,
 + `id` is to start with hash **`#`**, and may present only once,
 + `classnames` are to start with dot **`.`**, and may present many.
 
+There are two groups of identifiers. Each group is optional, may present or not.\
+**The first group of identifiers** _(just after the `type`)_ is for `container` node.\
+**The second group of identifiers** _(just after the `title`)_ is for `title` node.
+
+**Here are some example usages.** *For simplicity*, I omitted the container contents and ending syntax, just put the beginning syntax in the examples. **All are valid usage for specific identifiers.**
+
 > [!TIP]
-> **These identifiers can be placed as all three, any two, or just any of them in the desired order, with or without a space between them.**
-
-**The first group of identifiers** _(just after the type)_ is for `container` node.\
-**The second group of identifiers** _(just after the title)_ is for `title` node.\
-Each group is optional, may present or not.
-
-Here are some example usage. *For simplicity*, I omitted the container contents and ending syntax, just put the beginning syntax in the examples. **All are valid usage for specific identifiers.**
+> **These identifiers can be placed as all three, any two, or just any of them in the desired order, with or without a space between them.** This is why the "flexibility" term comes from.
 
 ```markdown
 ::: info {section#foo.myclass.second-class} Title {span#baz.someclass.other-class}

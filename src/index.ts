@@ -81,7 +81,7 @@ export const REGEX_START = /^(:{3})\s*(\w+)?\s*(.*[^ \n])?/u;
 export const REGEX_END = /\s*\n*?:::$/;
 export const REGEX_BAD_SYNTAX = /^:::\s*\n+\s*:::\s*.*/;
 
-// to find custom parts in curly braces --> {article#foo} Title {span.bar}
+// to find specific identifiers in curly braces --> {article#foo} Title {span.bar}
 export const REGEX_CUSTOM = /(\{[^{}]*\})?(\s*[^{}]*\s*)?(\{[^{}]*\})?/u;
 
 /**
@@ -118,7 +118,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
     if (!mainTitle) return;
 
-    // props may contain a tagname, an id and a classname specific to this title node
+    // props may contain specific identifiers (tagname, id, classnames) specific to this title node
     const specificTagName = props?.filter((p) => /^[^#.]/.test(p))?.[0];
     const specificId = props?.filter((p) => p.startsWith("#"))?.[0]?.slice(1);
     const specificClassName = props?.filter((p) => p.startsWith("."))?.map((p) => p.slice(1));
@@ -173,7 +173,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     const _type = type?.toLowerCase();
     const _title = title?.replace(/\s+/g, " ");
 
-    // props may contain a tagname, an id and a classname specific to this container node
+    // props may contain specific identifiers (tagname, id, classnames) specific to this container node
     const specificTagName = props?.filter((p) => /^[^#.]/.test(p))?.[0];
     const specificId = props?.filter((p) => p.startsWith("#"))?.[0]?.slice(1);
     const specificClassName = props?.filter((p) => p.startsWith("."))?.map((p) => p.slice(1));
@@ -229,11 +229,11 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
   };
 
   /**
-   * the matched title may contain additional props for container and title node
+   * the matched title may contain specific identifiers for container and title node
    * in curly braces like: {section#foo} Title {span.bar}
    *
    */
-  function getCustomProps(input?: string): {
+  function getSpecificIdentifiers(input?: string): {
     containerProps: string[] | undefined;
     title: string | undefined;
     titleProps: string[] | undefined;
@@ -265,8 +265,8 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
   /**
    *
-   * It checks the paragraph node starts with a Text Node.
-   * And checks the value starts with container start marker.
+   * checks the paragraph node starts with a Text Node;
+   * and checks the value starts with container start marker.
    */
   function checkIsTarget(node: Paragraph): boolean {
     const firstElement = node.children[0];
@@ -535,7 +535,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
           ? analyzeChild(node) // mutates the node
           : analyzeChildren(node); // mutates the node
 
-      const { containerProps, title, titleProps } = getCustomProps(rawtitle?.trim());
+      const { containerProps, title, titleProps } = getSpecificIdentifiers(rawtitle?.trim());
 
       if (flag === "complete") {
         // means that the container starts and ends within the same paragraph node
