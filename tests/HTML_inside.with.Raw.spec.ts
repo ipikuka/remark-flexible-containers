@@ -9,28 +9,6 @@ import type { VFileCompatible } from "vfile";
 
 import plugin from "../src";
 
-/**
- *
- * to console.dir the tree as a plugin
- *
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const pluginLogTree = () => (tree: object) => {
-  console.dir(
-    JSON.parse(
-      JSON.stringify(
-        tree,
-        function replacer(key, value) {
-          if (key === "position") return undefined;
-          else return value;
-        },
-        2,
-      ),
-    ),
-    { depth: null },
-  );
-};
-
 const compiler = unified()
   .use(remarkParse)
   .use(gfm)

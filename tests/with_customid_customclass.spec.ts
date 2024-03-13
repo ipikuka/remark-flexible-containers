@@ -1,23 +1,6 @@
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import gfm from "remark-gfm";
-import remarkRehype from "remark-rehype";
-import rehypeStringify from "rehype-stringify";
 import dedent from "dedent";
-import type { VFileCompatible } from "vfile";
 
-import plugin from "../src";
-
-const compiler = unified()
-  .use(remarkParse)
-  .use(gfm)
-  .use(plugin)
-  .use(remarkRehype)
-  .use(rehypeStringify);
-
-const process = async (contents: VFileCompatible): Promise<VFileCompatible> => {
-  return compiler.process(contents).then((file) => file.value);
-};
+import { process } from "./util/index";
 
 describe("special/custom props", () => {
   // ******************************************
@@ -76,12 +59,27 @@ describe("special/custom props", () => {
   it("example in the readme", async () => {
     const input = dedent`
       ::: info {section#foo.myclass} Title Of Information {span#baz.someclass}
-      <!-- content -->
+      content
       :::
     `;
 
     expect(await process(input)).toMatchInlineSnapshot(
-      `"<section class="remark-container info myclass" id="foo"><span class="remark-container-title info someclass" id="baz">Title Of Information</span></section>"`,
+      `"<section class="remark-container info myclass" id="foo"><span class="remark-container-title info someclass" id="baz">Title Of Information</span><p>content</p></section>"`,
+    );
+  });
+
+  // ******************************************
+  it("example in the demo app", async () => {
+    const input = dedent`
+      ::: details {details.remark-details} Title Of Information {summary.remark-summary}
+      content
+      :::
+    `;
+
+    // if there is specific identifiers for the title, should break the rule "title: () => null"
+
+    expect(await process(input, { title: () => null })).toMatchInlineSnapshot(
+      `"<details class="remark-container details remark-details"><summary class="remark-container-title details remark-summary">Title Of Information</summary><p>content</p></details>"`,
     );
   });
 });

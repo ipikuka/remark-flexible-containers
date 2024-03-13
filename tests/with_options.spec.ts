@@ -1,45 +1,31 @@
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import gfm from "remark-gfm";
-import remarkRehype from "remark-rehype";
-import rehypeStringify from "rehype-stringify";
 import dedent from "dedent";
-import type { VFileCompatible } from "vfile";
 
-import plugin from "../src";
+import { type FlexibleContainerOptions } from "../src";
+import { process } from "./util/index";
 
-const compiler = unified()
-  .use(remarkParse)
-  .use(gfm)
-  .use(plugin, {
-    containerTagName: "section",
-    containerClassName: "remark-custom-container",
-    containerProperties(type, title) {
-      return {
-        ["data-type"]: type,
-        title,
-        dummy: "", // shouldn't be added
-        empty: [], // shouldn't be added
-        className: undefined, // shouldn't be taken account
-      };
-    },
-    titleTagName: "span",
-    titleClassName: "remark-custom-container-title",
-    titleProperties: (type, title) => {
-      return {
-        ["data-type"]: type,
-        ["data-title"]: title?.toUpperCase(),
-        dummy: "", // shouldn't be added
-        empty: [], // shouldn't be added
-        className: undefined, // shouldn't be taken account
-      };
-    },
-  })
-  .use(remarkRehype)
-  .use(rehypeStringify);
-
-const process = async (contents: VFileCompatible): Promise<VFileCompatible> => {
-  return compiler.process(contents).then((file) => file.value);
+const options: FlexibleContainerOptions = {
+  containerTagName: "section",
+  containerClassName: "remark-custom-container",
+  containerProperties(type, title) {
+    return {
+      ["data-type"]: type,
+      title,
+      dummy: "", // shouldn't be added
+      empty: [], // shouldn't be added
+      className: undefined, // shouldn't be taken account
+    };
+  },
+  titleTagName: "span",
+  titleClassName: "remark-custom-container-title",
+  titleProperties: (type, title) => {
+    return {
+      ["data-type"]: type,
+      ["data-title"]: title?.toUpperCase(),
+      dummy: "", // shouldn't be added
+      empty: [], // shouldn't be added
+      className: undefined, // shouldn't be taken account
+    };
+  },
 };
 
 describe("with options - fail", () => {
@@ -51,7 +37,7 @@ describe("with options - fail", () => {
       :::
     `;
 
-    expect(await process(input)).toMatchInlineSnapshot(`
+    expect(await process(input, options)).toMatchInlineSnapshot(`
       "<p>:::</p>
       <p>:::</p>"
     `);
@@ -65,7 +51,7 @@ describe("with options - fail", () => {
         ::: tip
       `;
 
-    expect(await process(input)).toMatchInlineSnapshot(`
+    expect(await process(input, options)).toMatchInlineSnapshot(`
       "<p>:::</p>
       <p>::: tip</p>"
     `);
@@ -83,7 +69,7 @@ describe("with options - success", () => {
       :::
     `;
 
-    expect(await process(input)).toMatchInlineSnapshot(
+    expect(await process(input, options)).toMatchInlineSnapshot(
       `"<section class="remark-custom-container"><p>content</p></section>"`,
     );
   });
@@ -96,7 +82,7 @@ describe("with options - success", () => {
       :::
     `;
 
-    expect(await process(input)).toMatchInlineSnapshot(
+    expect(await process(input, options)).toMatchInlineSnapshot(
       `"<section class="remark-custom-container info" data-type="info"></section>"`,
     );
   });
@@ -111,7 +97,7 @@ describe("with options - success", () => {
       :::
     `;
 
-    expect(await process(input)).toMatchInlineSnapshot(
+    expect(await process(input, options)).toMatchInlineSnapshot(
       `"<section class="remark-custom-container danger" data-type="danger"><p>content</p></section>"`,
     );
   });
@@ -126,7 +112,7 @@ describe("with options - success", () => {
       :::
     `;
 
-    expect(await process(input)).toMatchInlineSnapshot(
+    expect(await process(input, options)).toMatchInlineSnapshot(
       `"<section class="remark-custom-container danger" data-type="danger" title="Title"><span class="remark-custom-container-title danger" data-type="danger" data-title="TITLE">Title</span><p>content</p></section>"`,
     );
   });
@@ -141,7 +127,7 @@ describe("with options - success", () => {
         :::
       `;
 
-    expect(await process(input)).toMatchInlineSnapshot(
+    expect(await process(input, options)).toMatchInlineSnapshot(
       `"<section class="remark-custom-container danger" data-type="danger" title="My Title"><span class="remark-custom-container-title danger" data-type="danger" data-title="MY TITLE">My Title</span><p>content</p></section>"`,
     );
   });
@@ -158,7 +144,7 @@ describe("with options - success", () => {
         :::
       `;
 
-    expect(await process(input)).toMatchInlineSnapshot(
+    expect(await process(input, options)).toMatchInlineSnapshot(
       `"<section class="remark-custom-container danger" data-type="danger" title="Title"><span class="remark-custom-container-title danger" data-type="danger" data-title="TITLE">Title</span><p><strong>bold text</strong> paragraph</p><p>other paragraph <em>italic content</em></p></section>"`,
     );
   });

@@ -1,23 +1,9 @@
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import gfm from "remark-gfm";
-import remarkRehype from "remark-rehype";
-import rehypeStringify from "rehype-stringify";
 import dedent from "dedent";
-import type { VFileCompatible } from "vfile";
 
-import plugin from "../src";
+import { type FlexibleContainerOptions } from "../src";
+import { process } from "./util/index";
 
-const compiler = unified()
-  .use(remarkParse)
-  .use(gfm)
-  .use(plugin, { title: () => null })
-  .use(remarkRehype)
-  .use(rehypeStringify);
-
-const process = async (contents: VFileCompatible): Promise<VFileCompatible> => {
-  return compiler.process(contents).then((file) => file.value);
-};
+const options: FlexibleContainerOptions = { title: () => null };
 
 describe("without title - fail", () => {
   // ******************************************
@@ -28,7 +14,7 @@ describe("without title - fail", () => {
       :::
     `;
 
-    expect(await process(input)).toMatchInlineSnapshot(`
+    expect(await process(input, options)).toMatchInlineSnapshot(`
       "<p>:::</p>
       <p>:::</p>"
     `);
@@ -42,7 +28,7 @@ describe("without title - fail", () => {
         ::: tip
       `;
 
-    expect(await process(input)).toMatchInlineSnapshot(`
+    expect(await process(input, options)).toMatchInlineSnapshot(`
       "<p>:::</p>
       <p>::: tip</p>"
     `);
@@ -60,7 +46,7 @@ describe("without title - success", () => {
       :::
     `;
 
-    expect(await process(input)).toMatchInlineSnapshot(
+    expect(await process(input, options)).toMatchInlineSnapshot(
       `"<div class="remark-container"><p>content</p></div>"`,
     );
   });
@@ -73,7 +59,7 @@ describe("without title - success", () => {
       :::
     `;
 
-    expect(await process(input)).toMatchInlineSnapshot(
+    expect(await process(input, options)).toMatchInlineSnapshot(
       `"<div class="remark-container info"></div>"`,
     );
   });
@@ -88,7 +74,7 @@ describe("without title - success", () => {
       :::
     `;
 
-    expect(await process(input)).toMatchInlineSnapshot(
+    expect(await process(input, options)).toMatchInlineSnapshot(
       `"<div class="remark-container danger"><p>content</p></div>"`,
     );
   });
@@ -103,7 +89,7 @@ describe("without title - success", () => {
       :::
     `;
 
-    expect(await process(input)).toMatchInlineSnapshot(
+    expect(await process(input, options)).toMatchInlineSnapshot(
       `"<div class="remark-container danger"><p>content</p></div>"`,
     );
   });
@@ -118,7 +104,7 @@ describe("without title - success", () => {
         :::
       `;
 
-    expect(await process(input)).toMatchInlineSnapshot(
+    expect(await process(input, options)).toMatchInlineSnapshot(
       `"<div class="remark-container danger"><p>content</p></div>"`,
     );
   });
@@ -135,7 +121,7 @@ describe("without title - success", () => {
         :::
       `;
 
-    expect(await process(input)).toMatchInlineSnapshot(
+    expect(await process(input, options)).toMatchInlineSnapshot(
       `"<div class="remark-container danger"><p><strong>bold text</strong> paragraph</p><p>other paragraph <em>italic content</em></p></div>"`,
     );
   });
