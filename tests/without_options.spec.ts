@@ -141,6 +141,19 @@ describe("no options - success", () => {
   });
 
   // ******************************************
+  it("No type, no title, with content (no empty lines)", async () => {
+    const input = dedent`
+      :::
+      **bold**
+      :::
+    `;
+
+    expect(await process(input)).toMatchInlineSnapshot(
+      `"<div class="remark-container"><p><strong>bold</strong></p></div>"`,
+    );
+  });
+
+  // ******************************************
   it("Type is defined, no title, no content", async () => {
     const input = dedent`
       ::: info

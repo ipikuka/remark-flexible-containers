@@ -134,6 +134,7 @@ All options are **optional** and have **default values**.
 
 ```typescript
 type RestrictedRecord = Record<string, unknown> & { className?: never };
+
 type TagNameFunction = (type?: string, title?: string) => string;
 type ClassNameFunction = (type?: string, title?: string) => string[];
 type PropertyFunction = (type?: string, title?: string) => RestrictedRecord;
