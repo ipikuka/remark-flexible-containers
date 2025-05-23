@@ -786,7 +786,7 @@ I like to contribute the Unified / Remark / MDX ecosystem, so I recommend you to
 - [`remark-flexible-markers`](https://www.npmjs.com/package/remark-flexible-markers)
   – Remark plugin to add custom `mark` element with customizable properties in markdown
 - [`remark-flexible-toc`](https://www.npmjs.com/package/remark-flexible-toc)
-  – Remark plugin to expose the table of contents via Vfile.data or via an option reference
+  – Remark plugin to expose the table of contents via `vfile.data` or via an option reference
 - [`remark-mdx-remove-esm`](https://www.npmjs.com/package/remark-mdx-remove-esm)
   – Remark plugin to remove import and/or export statements (mdxjsEsm)
 
@@ -794,6 +794,12 @@ I like to contribute the Unified / Remark / MDX ecosystem, so I recommend you to
 
 - [`rehype-pre-language`](https://www.npmjs.com/package/rehype-pre-language)
   – Rehype plugin to add language information as a property to `pre` element
+- [`rehype-highlight-code-lines`](https://www.npmjs.com/package/rehype-highlight-code-lines)
+  – Rehype plugin to add line numbers to code blocks and allow highlighting of desired code lines
+- [`rehype-code-meta`](https://www.npmjs.com/package/rehype-code-meta)
+  – Rehype plugin to copy `code.data.meta` to `code.properties.metastring`
+- [`rehype-image-toolkit`](https://www.npmjs.com/package/rehype-image-toolkit)
+  – Rehype plugin to enhance Markdown image syntax `![]()` and Markdown/MDX media elements (`<img>`, `<audio>`, `<video>`) by auto-linking bracketed or parenthesized image URLs, wrapping them in `<figure>` with optional captions, unwrapping images/videos/audio from paragraph, parsing directives in title for styling and adding attributes, and dynamically converting images into `<video>` or `<audio>` elements based on file extension.
 
 ### My Recma Plugins
 
@@ -801,6 +807,16 @@ I like to contribute the Unified / Remark / MDX ecosystem, so I recommend you to
   – Recma plugin to set the default value `() => null` for the Components in MDX in case of missing or not provided so as not to throw an error
 - [`recma-mdx-change-props`](https://www.npmjs.com/package/recma-mdx-change-props)
   – Recma plugin to change the `props` parameter into the `_props` in the `function _createMdxContent(props) {/* */}` in the compiled source in order to be able to use `{props.foo}` like expressions. It is useful for the `next-mdx-remote` or `next-mdx-remote-client` users in `nextjs` applications.
+- [`recma-mdx-change-imports`](https://www.npmjs.com/package/recma-mdx-change-imports)
+  – Recma plugin to convert import declarations for assets and media with relative links into variable declarations with string URLs, enabling direct asset URL resolution in compiled MDX.
+- [`recma-mdx-import-media`](https://www.npmjs.com/package/recma-mdx-import-media)
+  – Recma plugin to turn media relative paths into import declarations for both markdown and html syntax in MDX.
+- [`recma-mdx-import-react`](https://www.npmjs.com/package/recma-mdx-import-react)
+  – Recma plugin to ensure getting `React` instance from the arguments and to make the runtime props `{React, jsx, jsxs, jsxDev, Fragment}` is available in the dynamically imported components in the compiled source of MDX.
+- [`recma-mdx-html-override`](https://www.npmjs.com/package/recma-mdx-html-override)
+  – Recma plugin to allow selected raw HTML elements to be overridden via MDX components.
+- [`recma-mdx-interpolate`](https://www.npmjs.com/package/recma-mdx-interpolate)
+  – Recma plugin to enable interpolation of identifiers wrapped in curly braces within the `alt`, `src`, `href`, and `title` attributes of markdown link and image syntax in MDX.
 
 ## License
 
