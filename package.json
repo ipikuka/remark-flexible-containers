@@ -76,6 +76,9 @@
     "unist-util-find-between-all": "^1.1.0",
     "unist-util-visit": "^5.0.0"
   },
+  "peerDependencies": {
+    "unified": "^11"
+  },
   "sideEffects": false,
   "typeCoverage": {
     "atLeast": 100,
