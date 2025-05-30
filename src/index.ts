@@ -243,9 +243,10 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
     const match = input.match(REGEX_CUSTOM);
 
-    /* istanbul ignore next */
-    // eslint-disable-next-line
+    /* eslint-disable */
+    /* v8 ignore next */
     let [input_, containerFixture, mainTitle, titleFixture] = match ?? [undefined];
+    /* eslint-enable */
 
     containerFixture = containerFixture?.normalize();
 
@@ -509,7 +510,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
   const transformer: Transformer<Root> = (tree) => {
     // if a html node.value ends with "\n:::", remove and carry it into a new paragraph
     visit(tree, "html", function (node, index, parent) {
-      /* istanbul ignore next */
+      /* v8 ignore next */
       if (!parent || typeof index === "undefined") return;
 
       if (!/\n:::$/.test(node.value)) return;
@@ -524,7 +525,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
     // main visit
     visit(tree, "paragraph", function (node, index, parent) {
-      /* istanbul ignore next */
+      /* v8 ignore next */
       if (!parent || typeof index === "undefined") return;
 
       const isTarget = checkIsTarget(node);
@@ -583,7 +584,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       if (!closingNode) return;
 
       // just for type prediction
-      /* istanbul ignore next */
+      /* v8 ignore next */
       if (!is<Paragraph>(closingNode, "paragraph")) return;
 
       const closingFlag = analyzeClosingNode(closingNode); // mutates the closingNode

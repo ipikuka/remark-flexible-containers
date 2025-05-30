@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { REGEX_CUSTOM } from "../src/index";
 
 // Define a custom string method
