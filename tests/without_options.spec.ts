@@ -5,7 +5,7 @@ import { process } from "./util/index";
 
 describe("no options - fail", () => {
   // ******************************************
-  it("No type, no title, no content", async () => {
+  it("No type, no title, no content but empty line", async () => {
     const input = dedent`
       :::
       
@@ -32,7 +32,7 @@ describe("no options - fail", () => {
   });
 
   // ******************************************
-  it("Type mis-placed, no title, no content", async () => {
+  it("Type mis-placed, no title, no content but empty line", async () => {
     const input = dedent`
         :::
         
@@ -142,7 +142,7 @@ describe("no options - success", () => {
   });
 
   // ******************************************
-  it("No type, no title, with content (no empty lines)", async () => {
+  it("No type, no title, with content (with markdown content)", async () => {
     const input = dedent`
       :::
       **bold**

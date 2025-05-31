@@ -44,7 +44,7 @@ describe("special/custom props", () => {
   });
 
   // ******************************************
-  it("with special classname", async () => {
+  it("with special classname, no title", async () => {
     const input = dedent`
       :::tip {.foo} {.bar}
       content

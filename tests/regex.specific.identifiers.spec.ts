@@ -104,7 +104,7 @@ describe("regex for custom props", () => {
     `);
   });
 
-  it("gets custom props 1", () => {
+  it("gets custom props 5", () => {
     const input = "{  details#xxx   .fff  }   { summary   #box }";
 
     expect(getCustomProps(input)).toMatchInlineSnapshot(`
@@ -123,7 +123,7 @@ describe("regex for custom props", () => {
     `);
   });
 
-  it("gets custom props 5", () => {
+  it("gets custom props 6", () => {
     const input = " Title  My    Spaces ";
 
     expect(getCustomProps(input)).toMatchInlineSnapshot(`
@@ -135,7 +135,7 @@ describe("regex for custom props", () => {
     `);
   });
 
-  it("gets custom props 6", () => {
+  it("gets custom props 7", () => {
     const input = "{   } Title  My    Spaces {}";
 
     expect(getCustomProps(input)).toMatchInlineSnapshot(`
@@ -147,7 +147,7 @@ describe("regex for custom props", () => {
     `);
   });
 
-  it("gets custom props 6", () => {
+  it("gets custom props 8", () => {
     const input = "{   }   {}";
 
     expect(getCustomProps(input)).toMatchInlineSnapshot(`
@@ -159,7 +159,7 @@ describe("regex for custom props", () => {
     `);
   });
 
-  it("gets custom props 6", () => {
+  it("gets custom props 9", () => {
     const input = " {}";
 
     expect(getCustomProps(input)).toMatchInlineSnapshot(`
@@ -171,7 +171,7 @@ describe("regex for custom props", () => {
     `);
   });
 
-  it("gets custom props 6", () => {
+  it("gets custom props 10", () => {
     const input = " ";
 
     expect(getCustomProps(input)).toMatchInlineSnapshot(`
