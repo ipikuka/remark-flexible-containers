@@ -331,6 +331,14 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
         // remove the newline "\n" in the beginning, and get the rest of the value
         value = value.slice(1);
+
+        // If the very next line starts with another fence (e.g., "::: tip" or just ":::")
+        // this is an invalid/misplaced pattern. Keep paragraph as-is (regular), do not mutate.
+        const nextLineFenceWithType = new RegExp(`^${fence}\\s*[\\w-]+`, "u");
+        const nextLineFenceOnly = new RegExp(`^${fence}\\s*$`, "u");
+        if (nextLineFenceWithType.test(value) || nextLineFenceOnly.test(value)) {
+          return { flag: "regular", type, rawtitle: title };
+        }
       } else {
         // means that there is a "type" and/or a "title"
 
@@ -348,16 +356,22 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       if (value.endsWith(":".repeat(fenceLen))) {
         // means that the container starts and ends within same paragraph's Text child
 
-        // remove the "\n:::" at the end
-        value = value.slice(0, -fenceLen).trim();
+        // remove the closing fence and trim
+        const afterClose = value.slice(0, -fenceLen).trim();
 
-        flag = "complete";
+        // If there is no type and no title and no content, do not treat as container
+        if (!type && !title && afterClose === "") {
+          flag = "regular";
+        } else {
+          textElement.value = afterClose;
+          flag = "complete";
+        }
       } else {
+        // Not closed in the same paragraph. Treat as start (mutated)
         flag = "mutated";
+        // mutate the current node to remove the opening fence line
+        textElement.value = value;
       }
-
-      // mutate the current node
-      textElement.value = value;
     }
 
     return { flag, type, rawtitle: title };
@@ -523,47 +537,41 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
   }
 
   const transformer: Transformer<Root> = (tree) => {
-    // Pre-pass: split paragraphs that contain multiple fence lines into separate paragraphs.
-  visit(tree, "paragraph", function (node, index, parent) {
+    // Do not pre-split paragraphs; handle opening/closing within the analyzer
+    // to preserve expected behavior for invalid patterns.
+
+    // Targeted split: if a paragraph starts with a fence and contains a pure closing
+    // fence line later followed by more content, split into two paragraphs at that line.
+    visit(tree, "paragraph", function (node, index, parent) {
       /* v8 ignore next */
-  if (!parent || typeof index === "undefined") return CONTINUE;
-  if (node.children.length !== 1 || node.children[0].type !== "text") return CONTINUE;
+      if (!parent || typeof index === "undefined") return;
+      if (node.children.length !== 1 || node.children[0].type !== "text") return;
 
       const text = (node.children[0] as Text).value;
-  if (!text.includes(":")) return CONTINUE;
+      const open = text.match(/^(:{3,})/u);
+      if (!open) return;
+      if (!text.includes("\n")) return;
 
-      // If there's no newline or no fence-like lines, skip.
-  if (!/\n/.test(text)) return CONTINUE;
-
+      const fence = open[1];
       const lines = text.split(/\n/);
-      let buffer: string[] = [];
-      const out: Paragraph[] = [];
-
-      const flushBuffer = () => {
-        if (buffer.length) {
-          out.push(u("paragraph", [u("text", buffer.join("\n"))]) as Paragraph);
-          buffer = [];
-        }
-      };
-
-      for (const line of lines) {
-        if (/^\s*:{3,}/u.test(line)) {
-          // Fence-like line becomes its own paragraph
-          flushBuffer();
-          out.push(u("paragraph", [u("text", line)]) as Paragraph);
-        } else {
-          buffer.push(line);
+      // Find a line that equals the same-length fence (allow surrounding spaces) and has content after it
+      let closeIdx = -1;
+      for (let i = 1; i < lines.length; i++) {
+        if (new RegExp(`^\\s*${fence}\\s*$`, "u").test(lines[i])) {
+          closeIdx = i;
+          break;
         }
       }
+      if (closeIdx === -1) return;
+      if (closeIdx >= lines.length - 1) return; // nothing after closing -> don't split
 
-      flushBuffer();
+      const firstPart = lines.slice(0, closeIdx + 1).join("\n");
+      const secondPart = lines.slice(closeIdx + 1).join("\n");
 
-      if (out.length > 1) {
-        parent.children.splice(index, 1, ...out);
-        return index + out.length; // continue after inserted nodes
-      }
-
-      return CONTINUE;
+      const p1 = u("paragraph", [u("text", firstPart)]) as Paragraph;
+      const p2 = u("paragraph", [u("text", secondPart)]) as Paragraph;
+      parent.children.splice(index, 1, p1, p2);
+      return index + 2;
     });
 
     // if a html node.value ends with a closing fence, remove and carry it into a new paragraph
@@ -662,7 +670,10 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
           containerChildren.push(closingNode);
         }
 
-  // Allow empty containers as well
+        // If there is no type, no title and no content between fences, treat as regular text
+        if (!type && !title && containerChildren.length === 0) {
+          return CONTINUE;
+        }
 
         const titleNode = constructTitle(type, title, titleProps);
 
