@@ -48,6 +48,9 @@
   "bugs": {
     "url": "https://github.com/ipikuka/remark-flexible-containers/issues"
   },
+  "contributors": [
+    "hybridherbst <felix.herbst@gmail.com>"
+  ],
   "devDependencies": {
     "@eslint/js": "^9.28.0",
     "@types/node": "^22.15.29",
