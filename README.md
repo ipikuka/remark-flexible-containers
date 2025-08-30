@@ -16,12 +16,12 @@ This package is a [**unified**][unified] ([**remark**][remark]) plugin **to add 
 
 ## When should I use this?
 
-This plugin is useful if you want to **add a custom container** in markdown, for example, in order to produce a **callout** or **admonition**.
+**`remark-flexible-containers`** is useful if you want to **add a custom container** in markdown, for example, in order to produce a **callout** or an **admonition**.
 
-- This plugin can add `container` node, with _custom tag name, custom class name and also additional properties_.
-- This plugin can add `title` node inside the container, if the title is provided, with _custom tag name, custom class name and also additional properties_.
+- It can add `container` node, with _custom tag name, custom class name and also additional properties_.
+- It can add `title` node inside the container, if the title is provided, with _custom tag name, custom class name and also additional properties_.
 
-**This plugin doesn't support nested containers yet.**
+**`remark-flexible-containers` supports nested containers.**
 
 ## Installation
 
@@ -41,7 +41,9 @@ yarn add remark-flexible-containers
 
 ### ::: [type] [title]
 
-Say we have the following file, `example.md`, which consists a flexible container. The **container type** is "warning", specified _after the triple colon_ `:::`; and the **container title** is "title". **Each container should be closed with the triple colon `:::` at the end.**
+Say we have the following file, `example.md`, which consists a flexible container. **Each container should be closed with the same colon `:::` at the end. It works also with more colons than tripple colon as well. (4-colon, or 5-colon and more).**
+
+Below, the **container type** is "warning", specified _after the triple colon_ `:::`; and the **container title** is "title".
 
 ```markdown
 ::: warning title
@@ -127,6 +129,54 @@ As of version `^1.2.0`, the `remark-flexible-containers` supports syntax for spe
 ```
 
 For more information, go to [detailed explanation](#support-for-specific-identifiers) placed after the "options" and "examples" section.
+
+## It works with more colons than tripple colon (>=3)
+
+As of version `^1.4.0`, the `remark-flexible-containers` works with more colons (4-colon or 5-colon and more). **It requires just the length of the colons is identical at the opening and closing.**
+
+``` markdown
+:::: info Title
+<!-- content -->
+::::
+```
+
+``` markdown
+::::: info Title
+<!-- content -->
+:::::
+```
+
+## It supports nested containers
+
+As of version `^1.4.0`, the `remark-flexible-containers` supports nested containers. **It requires just more colons at the outer than the inner.**
+
+``` markdown
+::::: outer
+
+:::: inner
+
+::: deeper
+<!-- content -->
+:::
+
+::::
+
+:::::
+```
+
+``` markdown
+:::: tab-group Tab Group Title
+
+::: tab First Tab Title
+<!-- content -->
+:::
+
+::: tab Second Tab Title
+<!-- content -->
+:::
+
+::::
+```
 
 ## Options
 
