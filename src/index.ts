@@ -76,12 +76,19 @@ type PartiallyRequiredFlexibleContainerOptions = Prettify<
   >
 >;
 
-// Opening fence: 3 or more colons, optional type, optional title (trailing spaces allowed)
-export const REGEX_START = /^(:{3,})\s*([\w-]+)?\s*(.*\S)?\s*$/u;
-// Generic end matcher (any fence >=3 colons at end). Note: actual closing detection is done dynamically per fence length.
-export const REGEX_END = /\s*\n*?(::{3,})\s*$/u;
-// Kept for backward-compat; not used for gating anymore.
+// Capture colons >=3 (opening fence), optional type, optional title (trailing spaces NOT allowed)
+export const REGEX_START = /^(:{3,})\s*([\w-]+)?\s*(.*[^ \n])?/u;
+
+// Generic end matcher (any fence >=3 colons at end), no need capturing the length of colons
+export const REGEX_END = /\s*\n*?:{3,}$/;
+// actual closing detection is done dynamically per fence length
+const get_REGEX_END = (fence: string) => new RegExp(`\\s*\\n*?${fence}$`);
+
+// for gating for bad syntax
 export const REGEX_BAD_SYNTAX = /^:{3,}\s*\n+\s*:{3,}\s*.*/;
+// actual bad syntax detection is done dynamically per same fence length
+const get_REGEX_BAD_SYNTAX = (fence: string) =>
+  new RegExp(`^${fence}\\s*\\n+\\s*${fence}\\s*.*`);
 
 // to find specific identifiers in curly braces --> {article#foo} Title {span.bar}
 export const REGEX_CUSTOM = /(\{[^{}]*\})?(\s*[^{}]*\s*)?(\{[^{}]*\})?/u;
@@ -274,13 +281,21 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
   /**
    *
    * checks the paragraph node starts with a Text Node;
-   * and checks the value starts with container start marker.
+   * and checks the value starts with opening fence (>=3 colons).
    */
-  function getOpeningFenceLength(node: Paragraph): number {
+  function getOpeningFence(node: Paragraph): string | undefined {
     const firstElement = node.children[0];
-    if (firstElement.type !== "text") return 0;
+
+    if (firstElement.type !== "text") return;
+
     const match = firstElement.value.match(/^:{3,}/u);
-    return match ? match[0].length : 0;
+    const fence = match ? match[0] : undefined;
+
+    if (fence && get_REGEX_BAD_SYNTAX(fence).test(firstElement.value)) {
+      return;
+    }
+
+    return fence;
   }
 
   /**
@@ -299,13 +314,13 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
    * if the paragraph node has one child (as Text),
    * control whether the node has end marker ":::" or not (check completeness)
    */
-  function analyzeChild(node: Paragraph, fenceLen: number): AnalyzeResult {
+  function analyzeChild(node: Paragraph, fence: string): AnalyzeResult {
     const textElement = node.children[0] as Text; // it is guarenteed in "checkTarget"
 
     let flag: AnalyzeResult["flag"] | undefined = undefined;
     let type: string | undefined = undefined;
-  let title: string | undefined = undefined;
-  let nIndex: number = -1; // for newline "\n" character
+    let title: string | undefined = undefined;
+    let nIndex: number = -1; // for newline "\n" character
 
     if (!textElement.value.includes("\n")) {
       // It is regular container, meaningly, there is a blank line before the start marker ":::"
@@ -319,9 +334,8 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       title = _title;
     } else {
       // remove ":::" and whitespaces in the beginning
-      const fence = ":".repeat(fenceLen);
       let value = textElement.value
-        .replace(new RegExp(`^${fence}`, "u"), "")
+        .replace(new RegExp(`^${fence}`), "")
         .replace(/^[^\S\r\n]/, ""); // whitespaces not newline
 
       nIndex = value.indexOf("\n");
@@ -331,14 +345,6 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
         // remove the newline "\n" in the beginning, and get the rest of the value
         value = value.slice(1);
-
-        // If the very next line starts with another fence (e.g., "::: tip" or just ":::")
-        // this is an invalid/misplaced pattern. Keep paragraph as-is (regular), do not mutate.
-        const nextLineFenceWithType = new RegExp(`^${fence}\\s*[\\w-]+`, "u");
-        const nextLineFenceOnly = new RegExp(`^${fence}\\s*$`, "u");
-        if (nextLineFenceWithType.test(value) || nextLineFenceOnly.test(value)) {
-          return { flag: "regular", type, rawtitle: title };
-        }
       } else {
         // means that there is a "type" and/or a "title"
 
@@ -353,25 +359,19 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
         value = value.slice(nIndex + 1); // extracted \n from the beginning
       }
 
-      if (value.endsWith(":".repeat(fenceLen))) {
+      if (value.endsWith(fence)) {
         // means that the container starts and ends within same paragraph's Text child
 
-        // remove the closing fence and trim
-        const afterClose = value.slice(0, -fenceLen).trim();
+        // remove the "\n:::" at the end
+        value = value.slice(0, -fence.length).trim();
 
-        // If there is no type and no title and no content, do not treat as container
-        if (!type && !title && afterClose === "") {
-          flag = "regular";
-        } else {
-          textElement.value = afterClose;
-          flag = "complete";
-        }
+        flag = "complete";
       } else {
-        // Not closed in the same paragraph. Treat as start (mutated)
         flag = "mutated";
-        // mutate the current node to remove the opening fence line
-        textElement.value = value;
       }
+
+      // mutate the current node
+      textElement.value = value;
     }
 
     return { flag, type, rawtitle: title };
@@ -382,13 +382,13 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
    * if the paragraph node has more than one child,
    * control whether the node's last child has end marker ":::" or not (check completeness)
    */
-  function analyzeChildren(node: Paragraph, fenceLen: number): AnalyzeResult {
+  function analyzeChildren(node: Paragraph, fence: string): AnalyzeResult {
     const firstElement = node.children[0] as Text; // it is guarenteed in "checkTarget"
 
     let flag: AnalyzeResult["flag"] = "mutated"; // it has more children means it can not be "regular"
     let type: string | undefined = undefined;
     let title: string | undefined = undefined;
-  let nIndex: number = -1;
+    let nIndex: number = -1; // for newline "\n" character
     const paragraphChildren: PhrasingContent[] = [];
 
     if (!firstElement.value.includes("\n")) {
@@ -402,9 +402,8 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       title = _title;
     } else {
       // remove ":::" and whitespaces in the beginning
-      const fence = ":".repeat(fenceLen);
       let value = firstElement.value
-        .replace(new RegExp(`^${fence}`, "u"), "")
+        .replace(new RegExp(`^${fence}`), "")
         .replace(/^[^\S\r\n]/, ""); // whitespaces not newline
 
       nIndex = value.indexOf("\n");
@@ -443,11 +442,11 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
     // control weather has closing marker or not (check completeness)
     if (lastElement.type === "text") {
-      if (lastElement.value.endsWith("\n" + ":".repeat(fenceLen))) {
+      if (lastElement.value.endsWith("\n" + fence)) {
         flag = "complete";
 
         // mutate the last Phrase
-        lastElement.value = lastElement.value.slice(0, -(fenceLen + 1));
+        lastElement.value = lastElement.value.slice(0, -(fence.length + 1));
       }
 
       paragraphChildren.push(lastElement);
@@ -467,25 +466,16 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
    * control weather has closing wither ":::" or not (check completeness)
    *
    */
-  function analyzeClosingNode(node: Paragraph, fenceLen: number): AnalyzeResult["flag"] {
+  function analyzeClosingNode(node: Paragraph, fence: string): AnalyzeResult["flag"] {
     const { children } = node;
-
     const lastChild = children[children.length - 1];
 
     if (lastChild.type === "text") {
-      const fence = ":".repeat(fenceLen);
-      if (children.length === 1 && lastChild.value.trim() === fence) {
+      if (children.length === 1 && lastChild.value === fence) {
         return "regular";
       }
 
-      // remove closing fence if exists at the end (allow trailing spaces)
-  const closeWithNewline = new RegExp(`\\n\\s*${fence}\\s*$`, "u");
-  const closeDirect = new RegExp(`${fence}\\s*$`, "u");
-      if (closeWithNewline.test(lastChild.value)) {
-        lastChild.value = lastChild.value.replace(closeWithNewline, "");
-      } else if (closeDirect.test(lastChild.value)) {
-        lastChild.value = lastChild.value.replace(closeDirect, "");
-      }
+      lastChild.value = lastChild.value.replace(get_REGEX_END(fence), "");
 
       if (!lastChild.value) {
         node.children.pop();
@@ -537,147 +527,51 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
   }
 
   const transformer: Transformer<Root> = (tree) => {
-    // Do not pre-split paragraphs; handle opening/closing within the analyzer
-    // to preserve expected behavior for invalid patterns.
-
-    // Targeted split: if a paragraph starts with a fence and contains a pure closing
-    // fence line later followed by more content, split into two paragraphs at that line.
-    visit(tree, "paragraph", function (node, index, parent) {
-      /* v8 ignore next */
-      if (!parent || typeof index === "undefined") return;
-      if (node.children.length !== 1 || node.children[0].type !== "text") return;
-
-      const text = (node.children[0] as Text).value;
-      const open = text.match(/^(:{3,})/u);
-      if (!open) return;
-      if (!text.includes("\n")) return;
-
-      const fence = open[1];
-      const lines = text.split(/\n/);
-      // Find a line that equals the same-length fence (allow surrounding spaces) and has content after it
-      let closeIdx = -1;
-      for (let i = 1; i < lines.length; i++) {
-        if (new RegExp(`^\\s*${fence}\\s*$`, "u").test(lines[i])) {
-          closeIdx = i;
-          break;
-        }
-      }
-      if (closeIdx === -1) return;
-      if (closeIdx >= lines.length - 1) return; // nothing after closing -> don't split
-
-      const firstPart = lines.slice(0, closeIdx + 1).join("\n");
-      const secondPart = lines.slice(closeIdx + 1).join("\n");
-
-      const p1 = u("paragraph", [u("text", firstPart)]) as Paragraph;
-      const p2 = u("paragraph", [u("text", secondPart)]) as Paragraph;
-      parent.children.splice(index, 1, p1, p2);
-      return index + 2;
-    });
-
-    // if a html node.value ends with a closing fence, remove and carry it into a new paragraph
+    // if a html node.value ends with a new line and colons >=3 like "\n:::", remove and carry it into a new paragraph
     visit(tree, "html", function (node, index, parent) {
       /* v8 ignore next */
       if (!parent || typeof index === "undefined") return;
 
-      const m = node.value.match(/\n(:{3,})\s*$/u);
-      if (!m) return;
+      const match = node.value.match(/\n(:{3,})$/);
+      if (!match) return;
 
-      node.value = node.value.replace(/\n(:{3,})\s*$/u, "");
+      node.value = node.value.replace(new RegExp(`\\n${match[1]}$`), "");
 
-      const p = u("paragraph", [u("text", "\n" + m[1])]);
+      const p = u("paragraph", [u("text", "\n" + match[1])]);
 
       // add the paragraph after the html node, in order to the next visitor can catch the container node
       parent.children.splice(index + 1, 0, p);
     });
 
-    // multi-pass visit to allow nested containers
-    for (let pass = 0; pass < 10; pass++) {
-      let changes = 0;
+    // main visit
+    visit(tree, "paragraph", function (node, index, parent) {
+      /* v8 ignore next */
+      if (!parent || typeof index === "undefined") return;
 
-      visit(tree, "paragraph", function (node, index, parent) {
-        /* v8 ignore next */
-        if (!parent || typeof index === "undefined") return;
+      const fence = getOpeningFence(node);
+      if (!fence) return;
 
-        const fenceLen = getOpeningFenceLength(node);
-        if (!fenceLen) return;
+      const { flag, type, rawtitle } =
+        node.children.length === 1
+          ? analyzeChild(node, fence) // mutates the node
+          : analyzeChildren(node, fence); // mutates the node
 
-        const { flag, type, rawtitle } =
-          node.children.length === 1
-            ? analyzeChild(node, fenceLen) // mutates the node
-            : analyzeChildren(node, fenceLen); // mutates the node
+      const { containerProps, title, titleProps } = getSpecificIdentifiers(rawtitle?.trim());
 
-        const { containerProps, title, titleProps } = getSpecificIdentifiers(rawtitle?.trim());
-
-        if (flag === "complete") {
-          const titleNode = constructTitle(type, title, titleProps);
-
-          deleteFirstChildBreak(node); // mutates the node
-
-          const isParagraphWithEmptyText = checkParagraphWithEmptyText(node);
-
-          const containerChildren = isParagraphWithEmptyText
-            ? [...(titleNode ? [titleNode] : [])]
-            : [...(titleNode ? [titleNode] : []), node];
-
-          const containerNode = constructContainer(
-            containerChildren,
-            type,
-            title,
-            containerProps,
-          );
-
-          parent.children.splice(index, 1, containerNode);
-          changes++;
-
-          return CONTINUE;
-        }
-
-        const openingNode = node;
-        const openingFlag = flag;
-
-        const closingNode = findAfter(parent, openingNode, function (node) {
-          if (node.type !== "paragraph") return false;
-
-          const pChildren = (node as Paragraph).children;
-          const lastChild = pChildren[pChildren.length - 1];
-
-          if (lastChild.type !== "text") return false;
-
-          const fence = ":".repeat(fenceLen);
-          const re = new RegExp(`${fence}\\s*$`, "u");
-          return re.test(lastChild.value);
-        });
-
-        if (!closingNode) return;
-
-        // just for type prediction
-        /* v8 ignore next */
-        if (!is<Paragraph>(closingNode, "paragraph")) return;
-
-        const closingFlag = analyzeClosingNode(closingNode, fenceLen); // mutates the closingNode
-
-        const containerChildren = findAllBetween(
-          parent,
-          openingNode,
-          closingNode,
-        ) as BlockContent[];
-
-        if (openingFlag === "mutated") {
-          containerChildren.unshift(openingNode);
-        }
-
-        if (closingFlag === "mutated") {
-          containerChildren.push(closingNode);
-        }
-
-        // If there is no type, no title and no content between fences, treat as regular text
-        if (!type && !title && containerChildren.length === 0) {
-          return CONTINUE;
-        }
+      if (flag === "complete") {
+        // means that the container starts and ends within the same paragraph node
 
         const titleNode = constructTitle(type, title, titleProps);
 
-        if (titleNode) containerChildren.splice(0, 0, titleNode);
+        deleteFirstChildBreak(node); // mutates the node
+
+        const isParagraphWithEmptyText = checkParagraphWithEmptyText(node);
+
+        // is the paragraph node has only one child with empty text, don't add that paragraph node as a child
+        // meaningly, don't produce empty <p />
+        const containerChildren = isParagraphWithEmptyText
+          ? [...(titleNode ? [titleNode] : [])]
+          : [...(titleNode ? [titleNode] : []), node];
 
         const containerNode = constructContainer(
           containerChildren,
@@ -686,17 +580,68 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
           containerProps,
         );
 
-        const { children } = parent;
-        const openingIndex = children.indexOf(openingNode);
-        const closingIndex = children.indexOf(closingNode);
-        children.splice(openingIndex, closingIndex - openingIndex + 1, containerNode);
-        changes++;
+        // place it the place of the current paragraph node
+        parent.children.splice(index, 1, containerNode);
 
         return CONTINUE;
+      }
+
+      const openingNode = node;
+      const openingFlag = flag;
+
+      const closingNode = findAfter(parent, openingNode, function (node) {
+        if (node.type !== "paragraph") return false;
+
+        const pChildren = (node as Paragraph).children;
+        const lastChild = pChildren[pChildren.length - 1];
+
+        if (lastChild.type !== "text") return false;
+
+        return Boolean(lastChild.value.match(get_REGEX_END(fence)));
       });
 
-      if (changes === 0) break;
-    }
+      if (!closingNode) return;
+
+      // just for type predicate
+      /* v8 ignore next */
+      if (!is<Paragraph>(closingNode, "paragraph")) return;
+
+      const closingFlag = analyzeClosingNode(closingNode, fence); // mutates the closingNode
+
+      const containerChildren = findAllBetween(
+        parent,
+        openingNode,
+        closingNode,
+      ) as BlockContent[];
+
+      if (openingFlag === "mutated") {
+        containerChildren.unshift(openingNode);
+      }
+
+      if (closingFlag === "mutated") {
+        containerChildren.push(closingNode);
+      }
+
+      // if there is no content and type do not construct the container
+
+      if (!containerChildren.length && !type) return;
+
+      // if there is no content but type, then continue to construct the container
+
+      const titleNode = constructTitle(type, title, titleProps);
+
+      if (titleNode) containerChildren.splice(0, 0, titleNode);
+
+      const containerNode = constructContainer(containerChildren, type, title, containerProps);
+
+      const { children } = parent;
+      const openingIndex = children.indexOf(openingNode);
+      const closingIndex = children.indexOf(closingNode);
+      children.splice(openingIndex, closingIndex - openingIndex + 1, containerNode);
+
+      // the key of nesting ! (instead of returning CONTINUE;)
+      return openingIndex;
+    });
   };
 
   return transformer;
