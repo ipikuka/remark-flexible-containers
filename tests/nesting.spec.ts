@@ -1,33 +1,162 @@
 import { describe, it, expect } from "vitest";
 import dedent from "dedent";
+import * as prettier from "prettier";
 
-import { process } from "./util/index";
-import { type FlexibleContainerOptions } from "../src";
+import { process } from "../tests/util/index";
+import type { FlexibleContainerOptions } from "../src";
 
-describe("nesting with varying fence lengths", () => {
-  it("supports an outer 4-colon container with inner 3-colon containers", async () => {
+describe("supports any fence length >=3", () => {
+  it("fails if fence length is mismatched in opening and closing", async () => {
     const input = dedent`
-      :::: tab-group My Group
-      
-      ::: tab Some Tab
+      :::: info My Title
+      **bold**
       :::
-      
-      ::: tab Another tab
-      :::
+    `;
 
+    expect(await process(input)).toMatchInlineSnapshot(`
+      "<p><strong>bold</strong>
+      :::</p>"
+    `);
+  });
+
+  it("supports 4-colon containers", async () => {
+    const input = dedent`
+      :::: info My Title
+      **bold**
       ::::
     `;
 
     expect(await process(input)).toMatchInlineSnapshot(
-      `"<div class="remark-container tab-group"><div class="remark-container-title tab-group">My Group</div><div class="remark-container tab"><div class="remark-container-title tab">Some Tab</div></div><div class="remark-container tab"><div class="remark-container-title tab">Another tab</div></div></div>"`,
+      `"<div class="remark-container info"><div class="remark-container-title info">My Title</div><p><strong>bold</strong></p></div>"`,
     );
   });
 
-  it("supports custom component names (TabGroup/CodeTab) and custom title components", async () => {
+  it("supports 5-colon containers", async () => {
+    const input = dedent`
+      ::::: info My Title
+      **bold**
+      :::::
+    `;
+
+    expect(await process(input)).toMatchInlineSnapshot(
+      `"<div class="remark-container info"><div class="remark-container-title info">My Title</div><p><strong>bold</strong></p></div>"`,
+    );
+  });
+});
+
+describe("nesting with varying fence lengths", () => {
+  it("fails nesting if nested fence has more colons", async () => {
+    const input = dedent`
+      ::: outer Outer
+
+      :::: inner Inner
+
+      ::::: deeper Deeper
+      **bold**
+      :::::
+      
+      ::::
+      :::
+    `;
+
+    const output = await process(input);
+    const formatted_output = await prettier.format(String(output), { parser: "html" });
+
+    // only outer works, but inners fail
+    expect(formatted_output).toMatchInlineSnapshot(`
+      "<div class="remark-container outer">
+        <div class="remark-container-title outer">Outer</div>
+        <p>:::: inner Inner</p>
+        <p><strong>bold</strong> ::</p>
+      </div>
+      <p>:::</p>
+      "
+    `);
+  });
+
+  it("supports deeper containers", async () => {
+    const input = dedent`
+      ::::: outer Outer
+
+      :::: inner Inner
+
+      ::: deeper Deeper
+      **bold**
+      :::
+      
+      ::::
+      :::::
+    `;
+
+    const output = await process(input);
+    const formatted_output = await prettier.format(String(output), { parser: "html" });
+
+    expect(formatted_output).toMatchInlineSnapshot(`
+      "<div class="remark-container outer">
+        <div class="remark-container-title outer">Outer</div>
+        <div class="remark-container inner">
+          <div class="remark-container-title inner">Inner</div>
+          <div class="remark-container deeper">
+            <div class="remark-container-title deeper">Deeper</div>
+            <p><strong>bold</strong></p>
+          </div>
+        </div>
+      </div>
+      "
+    `);
+  });
+
+  it("supports an outer 4-colon container with inner 3-colon containers", async () => {
+    const input = dedent`
+      :::: tab-group Tab Group
+      
+      ::: tab First Tab
+      **bold**
+      :::
+      
+      ::: tab Second Tab
+      **bold**
+      :::
+      
+      ::::
+    `;
+
+    const output = await process(input);
+    const formatted_output = await prettier.format(String(output), { parser: "html" });
+
+    expect(formatted_output).toMatchInlineSnapshot(`
+      "<div class="remark-container tab-group">
+        <div class="remark-container-title tab-group">Tab Group</div>
+        <div class="remark-container tab">
+          <div class="remark-container-title tab">First Tab</div>
+          <p><strong>bold</strong></p>
+        </div>
+        <div class="remark-container tab">
+          <div class="remark-container-title tab">Second Tab</div>
+          <p><strong>bold</strong></p>
+        </div>
+      </div>
+      "
+    `);
+  });
+
+  it("supports an outer 4-colon container with inner 3-colon containers, with options", async () => {
+    const input = dedent`
+      :::: tab-group Tab Group
+      
+      ::: tab First Tab
+      :::
+      
+      ::: tab Second Tab
+      :::
+      
+      ::::
+    `;
+
     const options: FlexibleContainerOptions = {
       containerTagName(type) {
         if (type === "tab-group") return "TabGroup";
-        if (type === "tab") return "CodeTab";
+        if (type === "tab") return "Tab";
         return "div";
       },
       containerClassName(type) {
@@ -35,9 +164,14 @@ describe("nesting with varying fence lengths", () => {
         if (type === "tab") return ["tab"];
         return ["remark-container", type ?? ""];
       },
+      containerProperties(type, title) {
+        if (type === "tab-group") return { role: "tablist" };
+        if (type === "tab") return { role: "tab", "data-title": title };
+        return {};
+      },
       titleTagName(type) {
         if (type === "tab-group") return "TabGroupTitle";
-        if (type === "tab") return "CodeTabTitle";
+        if (type === "tab") return "TabTitle";
         return "div";
       },
       titleClassName(type) {
@@ -47,155 +181,60 @@ describe("nesting with varying fence lengths", () => {
       },
     };
 
-    const input = dedent`
-      :::: tab-group My Group
+    const output = await process(input, options);
+    const formatted_output = await prettier.format(String(output), { parser: "mdx" });
 
-      ::: tab Some Tab
-      :::
-      
-      ::: tab Another tab
-      :::
-      
-      ::::
-    `;
-
-    expect(await process(input, options)).toMatchInlineSnapshot(
-      `"<TabGroup class="tab-group"><TabGroupTitle class="tab-group-title">My Group</TabGroupTitle><CodeTab class="tab"><CodeTabTitle class="tab-title">Some Tab</CodeTabTitle></CodeTab><CodeTab class="tab"><CodeTabTitle class="tab-title">Another tab</CodeTabTitle></CodeTab></TabGroup>"`,
-    );
+    expect(formatted_output).toMatchInlineSnapshot(`
+      "<TabGroup class="tab-group" role="tablist">
+        <TabGroupTitle class="tab-group-title">Tab Group</TabGroupTitle>
+        <Tab class="tab" role="tab" data-title="First Tab">
+          <TabTitle class="tab-title">First Tab</TabTitle>
+        </Tab>
+        <Tab class="tab" role="tab" data-title="Second Tab">
+          <TabTitle class="tab-title">Second Tab</TabTitle>
+        </Tab>
+      </TabGroup>
+      "
+    `);
   });
 
-  it("supports custom tag names (tab-group/code-tab) and custom title tags", async () => {
-    const options: FlexibleContainerOptions = {
-      containerTagName(type) {
-        if (type === "tab-group") return "tab-group";
-        if (type === "tab") return "code-tab";
-        return "div";
-      },
-      containerClassName(type) {
-        if (type === "tab-group") return ["tabs"];
-        if (type === "tab") return ["tab"];
-        return ["remark-container", type ?? ""];
-      },
-      titleTagName(type) {
-        if (type === "tab-group") return "tab-group-title";
-        if (type === "tab") return "code-tab-title";
-        return "div";
-      },
-      titleClassName(type) {
-        if (type === "tab-group") return ["tabs-title"];
-        if (type === "tab") return ["tab-title"];
-        return ["remark-container-title"];
-      },
-    };
-
+  it("supports an outer 4-colon container with inner 3-colon containers, with custom specifiers", async () => {
     const input = dedent`
-      :::: tab-group My Group
-
-      ::: tab First
+      :::: tab-group {TabGroup#my-tab-group} Tab Group Title {TabGroupTitle#tab-group-title}
+      
+      ::: tab {Tab.active#first-tab} First Tab Title {TabTitle#first-tab-title}
+      First Tab Content
       :::
       
-      ::: tab Second
+      ::: tab {Tab#second-tab} Second Tab Title {TabTitle#second-tab-title}
+      Second Tab Content
       :::
       
       ::::
     `;
 
-    expect(await process(input, options)).toMatchInlineSnapshot(
-      `"<tab-group class="tabs"><tab-group-title class="tabs-title">My Group</tab-group-title><code-tab class="tab"><code-tab-title class="tab-title">First</code-tab-title></code-tab><code-tab class="tab"><code-tab-title class="tab-title">Second</code-tab-title></code-tab></tab-group>"`,
-    );
-  });
+    const output = await process(input);
+    const formatted_output = await prettier.format(String(output), { parser: "mdx" });
 
-  it("supports passing custom properties to containers and titles", async () => {
-    const options: FlexibleContainerOptions = {
-      containerTagName(type) {
-        if (type === "tab-group") return "tab-group";
-        if (type === "tab") return "code-tab";
-        return "div";
-      },
-      containerClassName(type) {
-        if (type === "tab-group") return ["tabs"];
-        if (type === "tab") return ["tab"];
-        return ["remark-container", type ?? ""];
-      },
-      containerProperties(type, title) {
-        if (type === "tab-group") return { role: "tablist", "data-kind": "group" } as const;
-        if (type === "tab") return { role: "tab", "data-tab": title } as const;
-        return {} as const;
-      },
-      titleTagName(type) {
-        if (type === "tab-group") return "tab-group-title";
-        if (type === "tab") return "code-tab-title";
-        return "div";
-      },
-      titleClassName(type) {
-        if (type === "tab-group") return ["tabs-title"];
-        if (type === "tab") return ["tab-title"];
-        return ["remark-container-title"];
-      },
-      titleProperties(type, title) {
-        if (type === "tab-group") return { "data-title": title } as const;
-        if (type === "tab") return { "aria-selected": title === "Active" } as const;
-        return {} as const;
-      },
-    };
-
-    const input = dedent`
-      :::: tab-group My Group
-
-      ::: tab Active
-      :::
-      
-      ::: tab Passive
-      :::
-      
-      ::::
-    `;
-
-    expect(await process(input, options)).toMatchInlineSnapshot(
-      `"<tab-group class="tabs" role="tablist" data-kind="group"><tab-group-title class="tabs-title" data-title="My Group">My Group</tab-group-title><code-tab class="tab" role="tab" data-tab="Active"><code-tab-title class="tab-title" aria-selected>Active</code-tab-title></code-tab><code-tab class="tab" role="tab" data-tab="Passive"><code-tab-title class="tab-title">Passive</code-tab-title></code-tab></tab-group>"`,
-    );
-  });
-
-  it("supports inline specific identifiers for tags/ids/classes for nested containers", async () => {
-    const input = dedent`
-      :::: tab-group {tab-group#group.tabs} My Group {tab-group-title#group-title.title}
-      
-      ::: tab {code-tab#t1.pill} Active {code-tab-title#t1-title.pill-title}
-      :::
-      
-      ::: tab {code-tab#t2.pill} Passive {code-tab-title#t2-title.pill-title}
-      :::
-      
-      ::::
-    `;
-
-    expect(await process(input)).toMatchInlineSnapshot(
-      `"<tab-group class="remark-container tab-group tabs" id="group"><tab-group-title class="remark-container-title tab-group title" id="group-title">My Group</tab-group-title><code-tab class="remark-container tab pill" id="t1"><code-tab-title class="remark-container-title tab pill-title" id="t1-title">Active</code-tab-title></code-tab><code-tab class="remark-container tab pill" id="t2"><code-tab-title class="remark-container-title tab pill-title" id="t2-title">Passive</code-tab-title></code-tab></tab-group>"`,
-    );
-  });
-});
-
-// add a test for this with tags specified, e.g.
-// ### ::: [type] [{tagname#id.classname}] [title] [{tagname#id.classname}]
-
-// so it's "<tab-group> and <single-tab>"
-
-describe("nesting with PascalCase brace syntax", () => {
-  it("supports inline specific identifiers with PascalCase tag names (TabGroup/CodeTab)", async () => {
-    const input = dedent`
-      :::: tab-group {TabGroup#group.tabs} My Group {TabGroupTitle#group-title.title}
-      
-      ::: tab {CodeTab#t1.pill} Active {CodeTabTitle#t1-title.pill-title}
-      :::
-      
-      ::: tab {CodeTab#t2.pill} Passive {CodeTabTitle#t2-title.pill-title}
-      :::
-      
-      ::::
-    `;
-
-    expect(await process(input)).toMatchInlineSnapshot(
-      `"<TabGroup class="remark-container tab-group tabs" id="group"><TabGroupTitle class="remark-container-title tab-group title" id="group-title">My Group</TabGroupTitle><CodeTab class="remark-container tab pill" id="t1"><CodeTabTitle class="remark-container-title tab pill-title" id="t1-title">Active</CodeTabTitle></CodeTab><CodeTab class="remark-container tab pill" id="t2"><CodeTabTitle class="remark-container-title tab pill-title" id="t2-title">Passive</CodeTabTitle></CodeTab></TabGroup>"`,
-    );
+    expect(formatted_output).toMatchInlineSnapshot(`
+      "<TabGroup class="remark-container tab-group" id="my-tab-group">
+        <TabGroupTitle class="remark-container-title tab-group" id="tab-group-title">
+          Tab Group Title
+        </TabGroupTitle>
+        <Tab class="remark-container tab active" id="first-tab">
+          <TabTitle class="remark-container-title tab" id="first-tab-title">
+            First Tab Title
+          </TabTitle>
+          <p>First Tab Content</p>
+        </Tab>
+        <Tab class="remark-container tab" id="second-tab">
+          <TabTitle class="remark-container-title tab" id="second-tab-title">
+            Second Tab Title
+          </TabTitle>
+          <p>Second Tab Content</p>
+        </Tab>
+      </TabGroup>
+      "
+    `);
   });
 });
