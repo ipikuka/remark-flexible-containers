@@ -127,8 +127,8 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
   function normalizeIdentifiers(input?: string): string | undefined {
     return input
       ?.replace(/[{}]/g, "")
-      .replace(".", " .")
-      .replace("#", " #")
+      .replace(/\./g, " .")
+      .replace(/#/g, " #")
       .replace(/\s+/g, " ")
       .trim();
   }

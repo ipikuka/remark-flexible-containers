@@ -57,15 +57,15 @@ describe("special/custom props", () => {
   });
 
   // ******************************************
-  it("example in the readme", async () => {
+  it("multiple class names vs multiple id", async () => {
     const input = dedent`
-      ::: info {section#foo.myclass} Title Of Information {span#baz.someclass}
+      ::: info {section#foo.myclass.yourclass#id} Title Of Information {span#baz.someclass.anotherclass#id}
       content
       :::
     `;
 
     expect(await process(input)).toMatchInlineSnapshot(
-      `"<section id="foo" class="remark-container info myclass"><span id="baz" class="remark-container-title info someclass">Title Of Information</span><p>content</p></section>"`,
+      `"<section id="foo" class="remark-container info myclass yourclass"><span id="baz" class="remark-container-title info someclass anotherclass">Title Of Information</span><p>content</p></section>"`,
     );
   });
 
