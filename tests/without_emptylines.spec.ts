@@ -45,6 +45,18 @@ describe("no options - success", () => {
     );
   });
 
+  it("No type, no title, with non-ASCII content (no empty lines)", async () => {
+    const input = dedent`
+      :::
+      手动创建错误成绩，或是通过其他方式导入了错误成绩，均会导致查分器计算出的 Best 50 与玩家 DX Rating 不一致。
+      :::
+    `;
+
+    expect(await process(input)).toMatchInlineSnapshot(
+      `"<div class="remark-container"><p>手动创建错误成绩，或是通过其他方式导入了错误成绩，均会导致查分器计算出的 Best 50 与玩家 DX Rating 不一致。</p></div>"`,
+    );
+  });
+
   // ******************************************
   it("No type, no title, with content - without empty line down", async () => {
     const input = dedent`
