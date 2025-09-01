@@ -180,7 +180,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       for (const [k, v] of Object.entries(baseProperties)) {
         if (k === "className") continue; // never accept className from settings-Properties
         if (typeof v === "string" && v === "") continue;
-        if (Array.isArray(v) && v.length === 0) continue;
+        if (Array.isArray(v) && (v as unknown[]).length === 0) continue;
         properties[k] = v;
       }
     }
