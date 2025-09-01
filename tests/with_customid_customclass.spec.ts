@@ -26,7 +26,7 @@ describe("special/custom props", () => {
     `;
 
     expect(await process(input)).toMatchInlineSnapshot(
-      `"<div class="remark-container tip" id="foo"><div class="remark-container-title tip" id="bar">Title</div><p>content</p></div>"`,
+      `"<div id="foo" class="remark-container tip"><div id="bar" class="remark-container-title tip">Title</div><p>content</p></div>"`,
     );
   });
 
@@ -65,7 +65,7 @@ describe("special/custom props", () => {
     `;
 
     expect(await process(input)).toMatchInlineSnapshot(
-      `"<section class="remark-container info myclass" id="foo"><span class="remark-container-title info someclass" id="baz">Title Of Information</span><p>content</p></section>"`,
+      `"<section id="foo" class="remark-container info myclass"><span id="baz" class="remark-container-title info someclass">Title Of Information</span><p>content</p></section>"`,
     );
   });
 

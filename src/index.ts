@@ -1,4 +1,4 @@
-import { CONTINUE, visit } from "unist-util-visit";
+import { visit, CONTINUE } from "unist-util-visit";
 import type { Plugin, Transformer } from "unified";
 import type {
   BlockContent,
@@ -15,24 +15,14 @@ import { findAfter } from "unist-util-find-after";
 import { findAllBetween } from "unist-util-find-between-all";
 
 type Prettify<T> = { [K in keyof T]: T[K] } & {};
-
 type PartiallyRequired<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface ContainerData extends Data {}
 
 interface Container extends Parent {
-  /**
-   * Node type of mdast Mark.
-   */
   type: "container";
-  /**
-   * Children of paragraph.
-   */
   children: BlockContent[];
-  /**
-   * Data associated with the mdast paragraph.
-   */
   data?: ContainerData | undefined;
 }
 
@@ -46,11 +36,17 @@ declare module "mdast" {
   }
 }
 
+interface HProperties {
+  id?: string;
+  className?: string[];
+  [key: string]: unknown;
+}
+
 type TitleFunction = (type?: string, title?: string) => string | null | undefined;
 type TagNameFunction = (type?: string, title?: string) => string;
 type ClassNameFunction = (type?: string, title?: string) => string[];
-type PropertyFunction = (type?: string, title?: string) => RestrictedRecord;
-type RestrictedRecord = Record<string, unknown> & { className?: never };
+type PropertyFunction = (type?: string, title?: string) => HPropertiesInput;
+type HPropertiesInput = Record<string, unknown> & { className?: never };
 
 export type FlexibleContainerOptions = {
   title?: TitleFunction;
@@ -75,6 +71,14 @@ type PartiallyRequiredFlexibleContainerOptions = Prettify<
     "containerTagName" | "containerClassName" | "titleTagName" | "titleClassName"
   >
 >;
+
+// ---- Type Predicates ---------------------------------------------------------------
+
+function is<T extends Node>(node: Node, type: string): node is T {
+  return node.type === type;
+}
+
+// ---- Regexes ---------------------------------------------------------------
 
 // Capture colons >=3 (opening fence), optional type, optional title (trailing spaces NOT allowed)
 export const REGEX_START = /^(:{3,})\s*([\w-]+)?\s*(.*[^ \n])?/u;
@@ -111,6 +115,81 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     options,
   ) as PartiallyRequiredFlexibleContainerOptions;
 
+  // ---- Helpers ----------------------------------------------------------
+
+  const REVISIT = (i: number) => i;
+
+  /**
+   *
+   * normalize specific identifiers "{section#id.classname}" --> "section #id .classname"
+   *
+   */
+  function normalizeIdentifiers(input?: string): string | undefined {
+    return input
+      ?.replace(/[{}]/g, "")
+      .replace(".", " .")
+      .replace("#", " #")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  /**
+   *
+   * if the paragraph has one child,
+   * check weather it has only one Text child and its value is empty string
+   *
+   */
+  function checkParagraphWithEmptyText(node: Paragraph): boolean {
+    return (
+      node.children.length === 1 &&
+      node.children[0].type === "text" &&
+      node.children[0].value === ""
+    );
+  }
+
+  /**
+   *
+   * if the first child of paragraph children is "break", then remove that child
+   *
+   */
+  function removeFirstBreakInPlace(node: Paragraph): undefined {
+    if (node.children[0].type === "break") {
+      node.children.shift();
+    }
+  }
+
+  /**
+   *
+   * merge properties
+   *
+   */
+  function mergeProperties(
+    id?: string,
+    classname?: string[],
+    baseProperties?: HPropertiesInput,
+  ): HProperties {
+    const properties: HProperties = {};
+
+    if (id) properties.id = id;
+
+    if (classname?.length) {
+      properties.className = [...classname];
+    }
+
+    if (baseProperties) {
+      for (const [k, v] of Object.entries(baseProperties)) {
+        if (k === "className") continue; // never accept className from settings-Properties
+        if (typeof v === "string" && v === "") continue;
+        if (Array.isArray(v) && v.length === 0) continue;
+        properties[k] = v;
+      }
+    }
+
+    return properties;
+  }
+
+  // ---- Constructors And Utils -------------------------------------------------------
+
   const constructTitle = (
     type?: string,
     title?: string,
@@ -118,39 +197,13 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
   ): Paragraph | undefined => {
     const _type = type?.toLowerCase();
     const _title = title?.replace(/\s+/g, " ");
+    const optionTitle = settings.title?.(_type, _title);
 
-    const _settingsTitle = settings.title?.(_type, _title);
+    // if the option is `title: () => null`, suppress title unless explicit props exist
+    if (!props && optionTitle === null) return;
 
-    // if the option is `title: () => null`, then return; but props breaks the rule !
-    if (!props && _settingsTitle === null) return;
-
-    const mainTitle = _settingsTitle || _title;
-
+    const mainTitle = optionTitle ?? _title;
     if (!mainTitle) return;
-
-    // props may contain specific identifiers (tagname, id, classnames) specific to this title node
-    const specificTagName = props?.filter((p) => /^[^#.]/.test(p))?.[0];
-    const specificId = props?.filter((p) => p.startsWith("#"))?.[0]?.slice(1);
-    const specificClassName = props?.filter((p) => p.startsWith("."))?.map((p) => p.slice(1));
-
-    let properties: Record<string, unknown> | undefined;
-
-    if (settings.titleProperties) {
-      properties = settings.titleProperties(_type, _title);
-
-      Object.entries(properties).forEach(([k, v]) => {
-        if (
-          (typeof v === "string" && v === "") ||
-          (Array.isArray(v) && (v as unknown[]).length === 0)
-        ) {
-          if (properties) {
-            properties[k] = undefined;
-          }
-        }
-
-        if (k === "className") delete properties?.["className"];
-      });
-    }
 
     const titleTagName =
       typeof settings.titleTagName === "string"
@@ -160,18 +213,22 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     const titleClassName =
       typeof settings.titleClassName === "string"
         ? [settings.titleClassName, _type ?? ""]
-        : [...settings.titleClassName(_type, _title)];
+        : settings.titleClassName(_type, _title);
+
+    // props may contain specific identifiers (tagname, id, classnames) specific to this title node
+    const specificTagName = props?.find((p) => /^[^#.]/.test(p));
+    const specificId = props?.find((p) => p.startsWith("#"))?.slice(1);
+    const specificClassName = props?.filter((p) => p.startsWith("."))?.map((p) => p.slice(1));
+
+    const mergedClassName = [...titleClassName, ...(specificClassName ?? [])];
+    const baseProps = settings.titleProperties?.(_type, _title);
 
     return {
       type: "paragraph",
       children: [{ type: "text", value: mainTitle }],
       data: {
         hName: specificTagName ?? titleTagName,
-        hProperties: {
-          className: [...titleClassName, ...(specificClassName ?? [])],
-          ...(properties && { ...properties }),
-          ...(specificId && { id: specificId }),
-        },
+        hProperties: mergeProperties(specificId, mergedClassName, baseProps),
       },
     };
   };
@@ -185,30 +242,6 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     const _type = type?.toLowerCase();
     const _title = title?.replace(/\s+/g, " ");
 
-    // props may contain specific identifiers (tagname, id, classnames) specific to this container node
-    const specificTagName = props?.filter((p) => /^[^#.]/.test(p))?.[0];
-    const specificId = props?.filter((p) => p.startsWith("#"))?.[0]?.slice(1);
-    const specificClassName = props?.filter((p) => p.startsWith("."))?.map((p) => p.slice(1));
-
-    let properties: Record<string, unknown> | undefined;
-
-    if (settings.containerProperties) {
-      properties = settings.containerProperties(_type, _title);
-
-      Object.entries(properties).forEach(([k, v]) => {
-        if (
-          (typeof v === "string" && v === "") ||
-          (Array.isArray(v) && (v as unknown[]).length === 0)
-        ) {
-          if (properties) {
-            properties[k] = undefined;
-          }
-        }
-
-        if (k === "className") delete properties?.["className"];
-      });
-    }
-
     const containerTagName =
       typeof settings.containerTagName === "string"
         ? settings.containerTagName
@@ -217,71 +250,62 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     const containerClassName =
       typeof settings.containerClassName === "string"
         ? [settings.containerClassName, _type ?? ""]
-        : [...settings.containerClassName(_type, _title)];
+        : settings.containerClassName(_type, _title);
+
+    // props may contain specific identifiers (tagname, id, classnames) specific to this container node
+    const specificTagName = props?.find((p) => /^[^#.]/.test(p));
+    const specificId = props?.find((p) => p.startsWith("#"))?.slice(1);
+    const specificClassName = props?.filter((p) => p.startsWith("."))?.map((p) => p.slice(1));
+
+    const mergedClassName = [...containerClassName, ...(specificClassName ?? [])];
+    const baseProps = settings.containerProperties?.(_type, _title);
 
     return {
       type: "container",
       children,
       data: {
         hName: specificTagName ?? containerTagName,
-        hProperties: {
-          className: [...containerClassName, ...(specificClassName ?? [])],
-          ...(properties && { ...properties }),
-          ...(specificId && { id: specificId }),
-        },
+        hProperties: mergeProperties(specificId, mergedClassName, baseProps),
       },
     };
   };
 
-  // Define a custom string method
-  String.prototype.normalize = function () {
-    return this?.replace(/[{}]/g, "")
-      .replace(".", " .")
-      .replace("#", " #")
-      .replace(/\s+/g, " ")
-      .trim();
-  };
-
   /**
-   * the matched title may contain specific identifiers for container and title node
-   * in curly braces like: {section#foo} Title {span.bar}
+   *
+   * extract specific identifiers in curly braces for container and title nodes
+   * ::: type {section#foo} title {span.bar}
    *
    */
-  function getSpecificIdentifiers(input?: string): {
-    containerProps: string[] | undefined;
-    title: string | undefined;
-    titleProps: string[] | undefined;
+  function extractSpecificIdentifiers(input?: string): {
+    containerProps?: string[];
+    title?: string;
+    titleProps?: string[];
   } {
-    if (!input) return { containerProps: undefined, title: undefined, titleProps: undefined };
+    if (!input) return {};
 
     const match = input.match(REGEX_CUSTOM);
 
-    /* eslint-disable */
     /* v8 ignore next */
-    let [input_, containerFixture, mainTitle, titleFixture] = match ?? [undefined];
-    /* eslint-enable */
+    const [, containerFixture, mainTitle, titleFixture] = match ?? [undefined];
 
-    containerFixture = containerFixture?.normalize();
+    const nContainerFixture = normalizeIdentifiers(containerFixture);
+    const nMainTitle = normalizeIdentifiers(mainTitle);
+    const nTitleFixture = normalizeIdentifiers(titleFixture);
 
     const containerProps =
-      containerFixture && containerFixture !== "" ? containerFixture?.split(" ") : undefined;
-
-    titleFixture = titleFixture?.normalize();
+      nContainerFixture && nContainerFixture !== "" ? nContainerFixture.split(" ") : undefined;
 
     const titleProps =
-      titleFixture && titleFixture !== "" ? titleFixture?.split(" ") : undefined;
+      nTitleFixture && nTitleFixture !== "" ? nTitleFixture.split(" ") : undefined;
 
-    mainTitle = mainTitle?.normalize();
-
-    mainTitle = mainTitle === "" ? undefined : mainTitle;
-
-    return { containerProps, title: mainTitle, titleProps };
+    return { containerProps, title: nMainTitle || undefined, titleProps };
   }
 
   /**
    *
-   * checks the paragraph node starts with a Text Node;
-   * and checks the value starts with opening fence (>=3 colons).
+   * get the opening fence string (>=3 colons)
+   * if present at the start of a paragraph’s first Text child and not “bad syntax”
+   *
    */
   function getOpeningFence(node: Paragraph): string | undefined {
     const firstElement = node.children[0];
@@ -291,33 +315,39 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     const match = firstElement.value.match(/^:{3,}/u);
     const fence = match ? match[0] : undefined;
 
-    if (fence && get_REGEX_BAD_SYNTAX(fence).test(firstElement.value)) {
-      return;
-    }
+    if (fence && get_REGEX_BAD_SYNTAX(fence).test(firstElement.value)) return;
 
     return fence;
   }
+
+  // ---- Analyzers ----------------------------------------------------------
 
   /**
    * {flag: "complete"} means it is complete, so the end marker ":::" is FOUND in the current node; and the current node is MUTATED
    * {flag: "mutated"} means the end marker ":::" is NOT FOUND in the current node; and the current node is MUTATED
    * {flag: "regular"} means it is a regular container starter; and the current node is NOT MUTATED
    */
+
+  type AnalyzeFlag = "complete" | "mutated" | "regular";
+
   type AnalyzeResult = {
-    flag: "complete" | "mutated" | "regular";
+    flag: AnalyzeFlag;
     type?: string;
     rawtitle?: string;
   };
 
   /**
    *
+   * Parses opening fence line; mutates the node’s children accordingly
+   *
    * if the paragraph node has one child (as Text),
-   * control whether the node has end marker ":::" or not (check completeness)
+   * check whether the node has end marker ":::" or not (check completeness)
+   *
    */
   function analyzeChild(node: Paragraph, fence: string): AnalyzeResult {
     const textElement = node.children[0] as Text; // it is guarenteed in "checkTarget"
 
-    let flag: AnalyzeResult["flag"] | undefined = undefined;
+    let flag: AnalyzeFlag | undefined = undefined;
     let type: string | undefined = undefined;
     let title: string | undefined = undefined;
     let nIndex: number = -1; // for newline "\n" character
@@ -379,13 +409,16 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
   /**
    *
+   * Parses opening fence line; mutates the node’s children accordingly
+   *
    * if the paragraph node has more than one child,
-   * control whether the node's last child has end marker ":::" or not (check completeness)
+   * check whether the node's last child has end marker ":::" or not (check completeness)
+   *
    */
   function analyzeChildren(node: Paragraph, fence: string): AnalyzeResult {
     const firstElement = node.children[0] as Text; // it is guarenteed in "checkTarget"
 
-    let flag: AnalyzeResult["flag"] = "mutated"; // it has more children means it can not be "regular"
+    let flag: AnalyzeFlag = "mutated"; // it has more children means it can not be "regular"
     let type: string | undefined = undefined;
     let title: string | undefined = undefined;
     let nIndex: number = -1; // for newline "\n" character
@@ -440,7 +473,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
     const lastElement = node.children[node.children.length - 1];
 
-    // control weather has closing marker or not (check completeness)
+    // check weather has closing marker or not (check completeness)
     if (lastElement.type === "text") {
       if (lastElement.value.endsWith("\n" + fence)) {
         flag = "complete";
@@ -462,11 +495,11 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
   /**
    *
-   * if the paragraph has one child (as Text),
-   * control weather has closing wither ":::" or not (check completeness)
+   * if the paragraph has one Text child,
+   * check it has closing ":::" or not (check completeness)
    *
    */
-  function analyzeClosingNode(node: Paragraph, fence: string): AnalyzeResult["flag"] {
+  function analyzeClosingNode(node: Paragraph, fence: string): AnalyzeFlag {
     const { children } = node;
     const lastChild = children[children.length - 1];
 
@@ -487,43 +520,6 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     } else {
       return "regular";
     }
-  }
-
-  /**
-   *
-   * if the paragraph has one child,
-   * control wether it has only one child text, and the text value is empty string ""
-   *
-   */
-  function checkParagraphWithEmptyText(node: Paragraph): boolean {
-    if (
-      node.children.length === 1 &&
-      node.children[0].type === "text" &&
-      node.children[0].value === ""
-    ) {
-      return true;
-    }
-
-    return false;
-  }
-
-  /**
-   *
-   * if the first child of paragraph children is "break", then remove that child
-   *
-   */
-  function deleteFirstChildBreak(node: Paragraph): undefined {
-    if (node.children[0].type === "break") {
-      node.children.shift();
-    }
-  }
-
-  /**
-   *
-   * type predicate function
-   */
-  function is<T extends Node>(node: Node, type: string): node is T {
-    return node.type === type;
   }
 
   const transformer: Transformer<Root> = (tree) => {
@@ -556,14 +552,16 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
           ? analyzeChild(node, fence) // mutates the node
           : analyzeChildren(node, fence); // mutates the node
 
-      const { containerProps, title, titleProps } = getSpecificIdentifiers(rawtitle?.trim());
+      const { containerProps, title, titleProps } = extractSpecificIdentifiers(
+        rawtitle?.trim(),
+      );
 
       if (flag === "complete") {
         // means that the container starts and ends within the same paragraph node
 
         const titleNode = constructTitle(type, title, titleProps);
 
-        deleteFirstChildBreak(node); // mutates the node
+        removeFirstBreakInPlace(node); // mutates the node
 
         const isParagraphWithEmptyText = checkParagraphWithEmptyText(node);
 
@@ -639,8 +637,8 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       const closingIndex = children.indexOf(closingNode);
       children.splice(openingIndex, closingIndex - openingIndex + 1, containerNode);
 
-      // the key of nesting ! (instead of returning CONTINUE;)
-      return openingIndex;
+      // Revisit position where the new node was inserted (key for nesting, instead of returning CONTINUE;)
+      return REVISIT(openingIndex);
     });
   };
 

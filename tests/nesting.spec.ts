@@ -217,18 +217,18 @@ describe("nesting with varying fence lengths", () => {
     const formatted_output = await prettier.format(String(output), { parser: "mdx" });
 
     expect(formatted_output).toMatchInlineSnapshot(`
-      "<TabGroup class="remark-container tab-group" id="my-tab-group">
-        <TabGroupTitle class="remark-container-title tab-group" id="tab-group-title">
+      "<TabGroup id="my-tab-group" class="remark-container tab-group">
+        <TabGroupTitle id="tab-group-title" class="remark-container-title tab-group">
           Tab Group Title
         </TabGroupTitle>
-        <Tab class="remark-container tab active" id="first-tab">
-          <TabTitle class="remark-container-title tab" id="first-tab-title">
+        <Tab id="first-tab" class="remark-container tab active">
+          <TabTitle id="first-tab-title" class="remark-container-title tab">
             First Tab Title
           </TabTitle>
           <p>First Tab Content</p>
         </Tab>
-        <Tab class="remark-container tab" id="second-tab">
-          <TabTitle class="remark-container-title tab" id="second-tab-title">
+        <Tab id="second-tab" class="remark-container tab">
+          <TabTitle id="second-tab-title" class="remark-container-title tab">
             Second Tab Title
           </TabTitle>
           <p>Second Tab Content</p>
