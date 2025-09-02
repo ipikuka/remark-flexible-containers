@@ -72,7 +72,7 @@ describe("special/custom props", () => {
   // ******************************************
   it("example in the demo app", async () => {
     const input = dedent`
-      ::: details {details.remark-details} Title Of Information {summary.remark-summary}
+      ::: info {details.remark-details} Title Of Information {summary.remark-summary}
       content
       :::
     `;
@@ -80,7 +80,7 @@ describe("special/custom props", () => {
     // if there is specific identifiers for the title, should break the rule "title: () => null"
 
     expect(await process(input, { title: () => null })).toMatchInlineSnapshot(
-      `"<details class="remark-container details remark-details"><summary class="remark-container-title details remark-summary">Title Of Information</summary><p>content</p></details>"`,
+      `"<details class="remark-container info remark-details"><summary class="remark-container-title info remark-summary">Title Of Information</summary><p>content</p></details>"`,
     );
   });
 });

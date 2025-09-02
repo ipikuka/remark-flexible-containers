@@ -200,19 +200,23 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     const optionTitle = settings.title?.(_type, _title);
 
     // if the option is `title: () => null`, suppress title unless explicit props exist
-    if (!props && optionTitle === null) return;
+    if (!props && optionTitle === null && _type !== "details") return;
 
-    const mainTitle = optionTitle ?? _title;
+    const mainTitle = optionTitle ?? _title ?? (_type === "details" ? "Details" : undefined);
     if (!mainTitle) return;
 
     const titleTagName =
       typeof settings.titleTagName === "string"
-        ? settings.titleTagName
+        ? _type === "details"
+          ? "summary"
+          : settings.titleTagName
         : settings.titleTagName(_type, _title);
 
     const titleClassName =
       typeof settings.titleClassName === "string"
-        ? [settings.titleClassName, _type ?? ""]
+        ? _type === "details"
+          ? ["remark-summary"]
+          : [settings.titleClassName, _type ?? ""]
         : settings.titleClassName(_type, _title);
 
     // props may contain specific identifiers (tagname, id, classnames) specific to this title node
@@ -244,12 +248,16 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
     const containerTagName =
       typeof settings.containerTagName === "string"
-        ? settings.containerTagName
+        ? _type === "details"
+          ? "details"
+          : settings.containerTagName
         : settings.containerTagName(_type, _title);
 
     const containerClassName =
       typeof settings.containerClassName === "string"
-        ? [settings.containerClassName, _type ?? ""]
+        ? _type === "details"
+          ? ["remark-details"]
+          : [settings.containerClassName, _type ?? ""]
         : settings.containerClassName(_type, _title);
 
     // props may contain specific identifiers (tagname, id, classnames) specific to this container node

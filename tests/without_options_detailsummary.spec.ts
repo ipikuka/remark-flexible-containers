@@ -1,26 +1,7 @@
 import { describe, it, expect } from "vitest";
 import dedent from "dedent";
 
-import { type FlexibleContainerOptions } from "../src";
 import { process } from "./util/index";
-
-const options: FlexibleContainerOptions = {
-  containerTagName(type) {
-    return type === "details" ? "details" : "div";
-  },
-  containerClassName(type) {
-    return type === "details" ? ["remark-details"] : ["remark-container", type ?? ""];
-  },
-  titleTagName(type) {
-    return type === "details" ? "summary" : "div";
-  },
-  titleClassName(type) {
-    return type === "details" ? ["remark-summary"] : ["remark-container-title", type ?? ""];
-  },
-  title(type?: string, title?: string) {
-    return type === "details" ? (title ?? "Details") : (title ?? type);
-  },
-};
 
 describe("with options - details summary", () => {
   // ******************************************
@@ -39,7 +20,7 @@ describe("with options - details summary", () => {
       :::
     `;
 
-    expect(await process(input, options)).toMatchInlineSnapshot(`
+    expect(await process(input)).toMatchInlineSnapshot(`
       "<details class="remark-details"><summary class="remark-summary">Details</summary><p>content</p></details>
       <details class="remark-details"><summary class="remark-summary">Title</summary><p>content</p></details>
       <div class="remark-container warning"><div class="remark-container-title warning">Title</div><p>content</p></div>"
@@ -56,8 +37,26 @@ describe("with options - details summary", () => {
       :::
     `;
 
-    expect(await process(input, options)).toMatchInlineSnapshot(
+    expect(await process(input)).toMatchInlineSnapshot(
       `"<details class="remark-details"><summary class="remark-summary">Title</summary><p><strong>bold text</strong> paragraph</p><p>other paragraph <em>italic content</em></p></details>"`,
     );
+  });
+
+  // ******************************************
+  it("if option title is null, it doesn't affect details title", async () => {
+    const input = dedent`
+      ::: details
+      content
+      :::
+
+      ::: details Title
+      content
+      :::
+    `;
+
+    expect(await process(input, { title: () => null })).toMatchInlineSnapshot(`
+      "<details class="remark-details"><summary class="remark-summary">Details</summary><p>content</p></details>
+      <details class="remark-details"><summary class="remark-summary">Title</summary><p>content</p></details>"
+    `);
   });
 });
