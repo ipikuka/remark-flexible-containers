@@ -320,6 +320,58 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     return fence;
   }
 
+  /**
+   *
+   * Parses the initial line of a fence block to extract the type, title,
+   * and the remaining content.
+   *
+   */
+  function parseFence(
+    initialValue: string,
+    fence: string,
+  ): {
+    type?: string;
+    title?: string;
+    rest?: string;
+  } {
+    let type: string | undefined;
+    let title: string | undefined;
+
+    if (!initialValue.includes("\n")) {
+      const match = initialValue.match(REGEX_START);
+
+      return { type: match![2], title: match![3], rest: undefined };
+    }
+
+    let value = initialValue
+      .replace(new RegExp(`^${fence}`), "")
+      // remove (space, tab) but exclude \r and \n in the beginning
+      .replace(/^[^\S\r\n]+/, "");
+
+    const nIndex = value.indexOf("\n");
+
+    if (nIndex === 0) {
+      // means that there is no "type" and "title"
+
+      // remove the newline "\n" in the beginning
+      value = value.slice(1);
+    } else {
+      // means that there is a "type" and/or a "title"
+
+      // get the type and the title
+      const params = value.substring(0, nIndex);
+      const match = params.match(/([\w-]+)\s*(.*[^\n ])?/u); // two matching groups: the first word and the rest
+
+      type = match![1];
+      title = match![2];
+
+      // remove upto newline "\n" (included) in the beginning, get the rest of the value
+      value = value.slice(nIndex + 1); // extracted \n from the beginning
+    }
+
+    return { type, title, rest: value };
+  }
+
   // ---- Analyzers ----------------------------------------------------------
 
   /**
@@ -347,58 +399,27 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
   function analyzeChild(node: Paragraph, fence: string): AnalyzeResult {
     const textElement = node.children[0] as Text; // it is guarenteed in "getOpeningFence"
 
-    let flag: AnalyzeFlag = "regular"; // lets assume it is regular
-    let type: string | undefined = undefined;
-    let title: string | undefined = undefined;
-    let nIndex: number = -1; // for newline "\n" character
+    let { type, title, rest } = parseFence(textElement.value, fence);
 
-    if (!textElement.value.includes("\n")) {
+    if (!rest) {
       // It is regular container
-      const match = textElement.value.match(REGEX_START);
-
-      type = match![2];
-      title = match![3];
-    } else {
-      let value = textElement.value
-        .replace(new RegExp(`^${fence}`), "")
-        // remove (space, tab) but exclude \r and \n in the beginning
-        .replace(/^[^\S\r\n]+/, "");
-
-      nIndex = value.indexOf("\n");
-
-      if (nIndex === 0) {
-        // means that there is no "type" and "title"
-
-        // remove the newline "\n" in the beginning, and get the rest of the value
-        value = value.slice(1);
-      } else {
-        // means that there is a "type" and/or a "title"
-
-        // get the type and the title
-        const params = value.substring(0, nIndex);
-        const match = params.match(/([\w-]+)\s*(.*[^\n ])?/u); // two matching groups: the first word and the rest
-
-        type = match![1];
-        title = match![2];
-
-        // remove upto newline "\n" (included) in the beginning, get the rest of the value
-        value = value.slice(nIndex + 1); // extracted \n from the beginning
-      }
-
-      if (value.endsWith(fence)) {
-        // means that the container starts and ends within same paragraph's Text child
-
-        // remove the "\n:::" at the end
-        value = value.slice(0, -fence.length).trim();
-
-        flag = "complete";
-      } else {
-        flag = "mutated";
-      }
-
-      // mutate the current node
-      textElement.value = value;
+      return { flag: "regular", type, rawtitle: title };
     }
+
+    let flag: AnalyzeFlag;
+    let remaining: string;
+
+    if (rest.endsWith(fence)) {
+      // the container ends within same paragraph's text node
+      flag = "complete";
+      remaining = rest.slice(0, -fence.length).trim(); // remove the "\n:::" at the end
+    } else {
+      // the container is opened but not closed in this text node
+      flag = "mutated";
+      remaining = rest;
+    }
+
+    textElement.value = remaining; // mutation
 
     return { flag, type, rawtitle: title };
   }
