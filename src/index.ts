@@ -529,8 +529,6 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
           ? analyzeChild(node, fence) // mutates the node
           : analyzeChildren(node, fence); // mutates the node
 
-      // const { flag, type, rawtitle } = analyzeParagraph(node, fence); // mutates the node
-
       const { containerProps, title, titleProps } = extractSpecificIdentifiers(
         rawtitle?.trim(),
       );
@@ -545,7 +543,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
         const isParagraphWithEmptyText = checkParagraphWithEmptyText(node);
 
         // is the paragraph node has only one child with empty text, don't add that paragraph node as a child
-        // meaningly, don't produce empty <p />
+        // meaningly, don't produce empty <p>
         const containerChildren = isParagraphWithEmptyText
           ? [...(titleNode ? [titleNode] : [])]
           : [...(titleNode ? [titleNode] : []), node];
@@ -600,11 +598,9 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       }
 
       // if there is no content and type do not construct the container
-
       if (!containerChildren.length && !type) return;
 
       // if there is no content but type, then continue to construct the container
-
       const titleNode = constructTitle(type, title, titleProps);
 
       if (titleNode) containerChildren.splice(0, 0, titleNode);
