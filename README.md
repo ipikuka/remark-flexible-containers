@@ -178,6 +178,36 @@ As of version `^1.4.0`, the `remark-flexible-containers` supports nested contain
 ::::
 ```
 
+## It can produce `<details> <summary>` element
+
+All you have to is that you set a specific type **details**.
+``` markdown
+::: details Title
+<!-- content -->
+:::
+```
+
+```html
+<details class="remark-details">
+  <summary class="remark-summary">Title</summary>
+  <!-- content -->
+</details>
+```
+
+If you don't provide a title, the default is **Details** for `<summary>` element.
+``` markdown
+::: details
+<!-- content -->
+:::
+```
+
+```html
+<details class="remark-details">
+  <summary class="remark-summary">Details</summary>
+  <!-- content -->
+</details>
+```
+
 ## Options
 
 All options are **optional** and have **default values**.
