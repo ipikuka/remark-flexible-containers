@@ -13,7 +13,7 @@
     "lint": "eslint .",
     "test": "vitest --watch=false",
     "test:watch": "vitest",
-    "test:file": "vitest with_options.spec.ts",
+    "test:file": "vitest without_options.spec.ts",
     "prepack": "npm run build",
     "prepublishOnly": "npm run test && npm run format && npm run test-coverage",
     "test-coverage": "vitest run --coverage"

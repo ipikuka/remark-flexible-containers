@@ -345,28 +345,24 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
    *
    */
   function analyzeChild(node: Paragraph, fence: string): AnalyzeResult {
-    const textElement = node.children[0] as Text; // it is guarenteed in "checkTarget"
+    const textElement = node.children[0] as Text; // it is guarenteed in "getOpeningFence"
 
-    let flag: AnalyzeFlag | undefined = undefined;
+    let flag: AnalyzeFlag = "regular"; // lets assume it is regular
     let type: string | undefined = undefined;
     let title: string | undefined = undefined;
     let nIndex: number = -1; // for newline "\n" character
 
     if (!textElement.value.includes("\n")) {
-      // It is regular container, meaningly, there is a blank line before the start marker ":::"
+      // It is regular container
       const match = textElement.value.match(REGEX_START);
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [input, triplecolon, _type, _title] = match!;
-
-      flag = "regular";
-      type = _type;
-      title = _title;
+      type = match![2];
+      title = match![3];
     } else {
-      // remove ":::" and whitespaces in the beginning
       let value = textElement.value
         .replace(new RegExp(`^${fence}`), "")
-        .replace(/^[^\S\r\n]/, ""); // whitespaces not newline
+        // remove (space, tab) but exclude \r and \n in the beginning
+        .replace(/^[^\S\r\n]+/, "");
 
       nIndex = value.indexOf("\n");
 
@@ -416,7 +412,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
    *
    */
   function analyzeChildren(node: Paragraph, fence: string): AnalyzeResult {
-    const firstElement = node.children[0] as Text; // it is guarenteed in "checkTarget"
+    const firstElement = node.children[0] as Text; // it is guarenteed in "getOpeningFence"
 
     let flag: AnalyzeFlag = "mutated"; // it has more children means it can not be "regular"
     let type: string | undefined = undefined;
@@ -425,19 +421,16 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     const paragraphChildren: PhrasingContent[] = [];
 
     if (!firstElement.value.includes("\n")) {
-      // means there is a Phrase other than Text Phrase after the line which has opening marker ":::"
+      // means there is a Phrase other than Text Phrase after
       const match = firstElement.value.match(REGEX_START);
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [input, triplecolon, _type, _title] = match!;
-
-      type = _type;
-      title = _title;
+      type = match![2];
+      title = match![3];
     } else {
-      // remove ":::" and whitespaces in the beginning
       let value = firstElement.value
         .replace(new RegExp(`^${fence}`), "")
-        .replace(/^[^\S\r\n]/, ""); // whitespaces not newline
+        // remove (space, tab) but exclude \r and \n in the beginning
+        .replace(/^[^\S\r\n]+/, "");
 
       nIndex = value.indexOf("\n");
 
@@ -551,6 +544,8 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
         node.children.length === 1
           ? analyzeChild(node, fence) // mutates the node
           : analyzeChildren(node, fence); // mutates the node
+
+      // const { flag, type, rawtitle } = analyzeParagraph(node, fence); // mutates the node
 
       const { containerProps, title, titleProps } = extractSpecificIdentifiers(
         rawtitle?.trim(),
