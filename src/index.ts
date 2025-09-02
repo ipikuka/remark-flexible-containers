@@ -326,7 +326,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
    * and the remaining content.
    *
    */
-  function parseFence(
+  function parseFenceTypeTitle(
     initialValue: string,
     fence: string,
   ): {
@@ -399,7 +399,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
   function analyzeChild(node: Paragraph, fence: string): AnalyzeResult {
     const textElement = node.children[0] as Text; // it is guarenteed in "getOpeningFence"
 
-    let { type, title, rest } = parseFence(textElement.value, fence);
+    const { type, title, rest } = parseFenceTypeTitle(textElement.value, fence);
 
     if (!rest) {
       // It is regular container
@@ -436,46 +436,13 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     const firstElement = node.children[0] as Text; // it is guarenteed in "getOpeningFence"
 
     let flag: AnalyzeFlag = "mutated"; // it has more children means it can not be "regular"
-    let type: string | undefined = undefined;
-    let title: string | undefined = undefined;
-    let nIndex: number = -1; // for newline "\n" character
     const paragraphChildren: PhrasingContent[] = [];
 
-    if (!firstElement.value.includes("\n")) {
-      // means there is a Phrase other than Text Phrase after
-      const match = firstElement.value.match(REGEX_START);
+    const { type, title, rest } = parseFenceTypeTitle(firstElement.value, fence);
 
-      type = match![2];
-      title = match![3];
-    } else {
-      let value = firstElement.value
-        .replace(new RegExp(`^${fence}`), "")
-        // remove (space, tab) but exclude \r and \n in the beginning
-        .replace(/^[^\S\r\n]+/, "");
-
-      nIndex = value.indexOf("\n");
-
-      if (nIndex === 0) {
-        // means that there is no "type" and "title"
-
-        // remove the newline "\n" in the beginning, and get the rest of the value
-        value = value.slice(1);
-      } else {
-        // means that there is a "type" and/or a "title"
-
-        // get the type and the title
-        const params = value.substring(0, nIndex);
-        const match = params.match(/([\w-]+)\s*(.*[^\n ])?/u); // two matching groups: the first word and the rest
-
-        type = match![1];
-        title = match![2];
-
-        // remove upto newline "\n" in the beginning, get the rest of the value
-        value = value.slice(nIndex + 1);
-      }
-
-      // mutate the first element value after extracting type and title
-      firstElement.value = value;
+    if (rest) {
+      // mutate the first Phrase
+      firstElement.value = rest;
 
       paragraphChildren.push(firstElement);
     }
@@ -487,22 +454,18 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
     const lastElement = node.children[node.children.length - 1];
 
-    // check weather has closing marker or not (check completeness)
-    if (lastElement.type === "text") {
-      if (lastElement.value.endsWith("\n" + fence)) {
-        flag = "complete";
+    // check weather the paragraph has closing marker or not (check completeness)
+    if (lastElement.type === "text" && lastElement.value.endsWith("\n" + fence)) {
+      // the container ends within the same paragraph
+      flag = "complete";
 
-        // mutate the last Phrase
-        lastElement.value = lastElement.value.slice(0, -(fence.length + 1));
-      }
-
-      paragraphChildren.push(lastElement);
-    } else if (lastElement) {
-      paragraphChildren.push(lastElement);
+      // mutate the last Phrase
+      lastElement.value = lastElement.value.slice(0, -(fence.length + 1));
     }
 
-    // mutate the current paragraph children
-    node.children = paragraphChildren;
+    paragraphChildren.push(lastElement);
+
+    node.children = paragraphChildren; // mutation
 
     return { flag, type, rawtitle: title };
   }
