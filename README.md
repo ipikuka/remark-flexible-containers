@@ -109,21 +109,19 @@ My paragraph with <strong>bold text</strong>
 
 ## It is more flexible and powerful
 
-### ::: [type] [{tagname#id.classname}] [title] [{tagname#id.classname}]
+### ::: [type] [{tagname#id.classname @attr}] [title] [{tagname#id.classname @attr=value}]
 
-As of version `^1.2.0`, the `remark-flexible-containers` supports syntax for specific identifiers (`tagname`, `id`, `classnames`) **for individual `container` and `title` node.** For example:
+As of version `^1.2.0`, the `remark-flexible-containers` supports syntax for specific identifiers (`tagname`, `id`, `classnames`, `attributes`) **for individual `container` and `title` node.** For example:
 
 ``` markdown
-::: info {section#foo.myclass} Title Of Information {span#baz.someclass}
+::: info {section#foo.myclass} Title {span#baz.someclass @disabled}
 <!-- content -->
 :::
 ```
 
 ```html
-<section class="remark-container info myclass" id="foo">
-  <span class="remark-container-title info someclass" id="baz">
-    Title Of Information
-  </span>
+<section id="foo" class="remark-container info myclass">
+  <span id="baz" class="remark-container-title info someclass" disabled>Title</span>
   <!-- content -->
 </section>
 ```
@@ -204,6 +202,20 @@ If you don't provide a title, the default is **Details** for `<summary>` element
 ```html
 <details class="remark-details">
   <summary class="remark-summary">Details</summary>
+  <!-- content -->
+</details>
+```
+
+If you want `<details>` element is opened, add specific identifer **`{@open}`** (attribute) just after the type `details`.
+``` markdown
+::: details {@open} Title
+<!-- content -->
+:::
+```
+
+```html
+<details class="remark-details" open>
+  <summary class="remark-summary">Title</summary>
   <!-- content -->
 </details>
 ```
@@ -415,6 +427,8 @@ use(remarkFlexibleContainers, {
   <!-- ... -->
 </div>
 ```
+
+On the other hand, the option **`title: () => null`** doesn't affect if the type is `details`, so `<summary>` element will have definetly a value.
 
 The callback function takes the `type` and the `title` as optional arguments and returns **string | null | undefined**. For example if there is no title you would want the title is the type of the container as a fallback.
 
@@ -699,7 +713,7 @@ is going to produce the container `section` element like below:
 ```javascript
 use(remarkFlexibleContainers, {
   containerTagName(type) {
-    return type === "details" ? "details" : "div";
+    return type === "details" ? "details" : "section";
   },
   containerClassName(type) {
     return type === "details" ? ["remark-details"] : ["remark-container", type ?? ""];
@@ -713,7 +727,7 @@ use(remarkFlexibleContainers, {
 });
 ```
 
-With above options you can create `details-summary` HTML element in addition to containers easily if you provide the type of the container as `details`.
+With above options you can create `details-summary` HTML element in addition to containers easily.
 
 ```markdown
 ::: details Title
@@ -730,10 +744,10 @@ Some information
   <summary class="remark-summary">Title</summary>
   <p>Some information</p>
 </details>
-<div class="remark-container warning">
+<section class="remark-container warning">
   <span class="remark-container warning">Title</span>
   <p>Some information</p>
-</div>
+</section>
 ```
 
 #### Without a type and a title
@@ -776,41 +790,42 @@ some **bold content** without stress
 :::
 ```
 
-## Support for Specific Identifiers
+## Support for Specific Identifiers (tag name, id, classname, attributes)
 
-### ::: [type] [{tagname#id.classname}] [title] [{tagname#id.classname}]
+### ::: [type] [{tagname#id.classname @attr}] [title] [{tagname#id.classname @attr=value}]
 
-As of version `^1.2.0`, the `remark-flexible-containers` supports syntax for specific identifiers (`tagname`, `id`, `classnames`) **for individual `container` and `title` node.** For example:
+**`remark-flexible-containers`** supports syntax for specific identifiers (`tagname`, `id`, `classnames`, `attributes`) **for individual `container` and `title` node.** For example:
 
 ``` markdown
-::: info {section#foo.myclass} Title Of Information {span#baz.someclass}
+::: info {section#foo.myclass @open @data-type=expandable} Title Of Information {span#baz.someclass}
 <!-- content -->
 :::
 ```
 
 ```html
-<section class="remark-container info myclass" id="foo">
-  <span class="remark-container-title info someclass" id="baz">
+<section id="foo" class="remark-container info myclass" open data-type="expandable">
+  <span id="baz" class="remark-container-title info someclass">
     Title Of Information
   </span>
   <!-- content -->
 </section>
 ```
-The identifiers (`tagname`, `id`, `classnames`) **must be inside curly braces**. 
+The identifiers (`tagname`, `id`, `classnames`, `attributes`) **must be inside curly braces**. 
 
 Syntax is very simple.
 + `tagname` is to be compatible HTML tag name, and may present only once,
 + `id` is to start with hash **`#`**, and may present only once,
 + `classnames` are to start with dot **`.`**, and may present many.
++ `attributes` are to start with at sign **`@`**, and may present many, can be either boolean attribute or key=value attribute.
 
 There are two groups of identifiers. Each group is optional, may present or not.\
 **The first group of identifiers** _(just after the `type`)_ is for `container` node.\
 **The second group of identifiers** _(just after the `title`)_ is for `title` node.
 
-**Here are some example usages.** *For simplicity*, I omitted the container contents and ending syntax, just put the beginning syntax in the examples. **All are valid usage for specific identifiers.**
+**Here are some example usages.** *For simplicity, I omitted the container contents and ending syntax, just put the beginning syntax in the examples.* **All are valid usage for specific identifiers.**
 
 > [!TIP]
-> **These identifiers can be placed as all three, any two, or just any of them in the desired order, with or without a space between them.** This is why the "flexibility" term comes from.
+> **These identifiers can be placed as all, any three, any two, or just any of them in the desired order, with or without a space between them.** This is why the "flexibility" term comes from. However, make sure that **no character other than a space appears before the at sign (`@`)**, because if you are using a package like `remark-gfm`, it may interpret something like **`{span@open.someclass}`** as an **autolink**. For this reason, **you should insert a space before the at sign `@` if necessary.**
 
 ```markdown
 ::: info {section#foo.myclass.second-class} Title {span#baz.someclass.other-class}
@@ -829,6 +844,11 @@ There are two groups of identifiers. Each group is optional, may present or not.
 ::: info {section#foo.myclass}
 ::: info Title {.someclass}
 ::: info Title {span#baz.someclass}
+::: info Title {#baz @data-attr=something}
+::: info Title {span#baz @open}
+::: info Title {@open span#baz}
+::: details {@open}
+::: details {@open} Title {.someclass}
 ```
 
 You should consider that **specific identifiers for `title` breaks the option `title: () => null`**, and the title will take place for that individual container.
