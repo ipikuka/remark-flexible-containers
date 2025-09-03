@@ -11,6 +11,7 @@ function normalizeIdentifiers(input?: string): string | undefined {
     ?.replace(/[{}]/g, "")
     .replace(/\./g, " .")
     .replace(/#/g, " #")
+    .replace(/@/g, " @")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -23,32 +24,28 @@ function normalizeIdentifiers(input?: string): string | undefined {
  */
 function extractSpecificIdentifiers(input?: string): {
   containerProps?: string[];
-  mainTitle?: string;
+  title?: string;
   titleProps?: string[];
 } {
   if (!input) return {};
 
   const match = input.match(REGEX_CUSTOM);
 
-  /* v8 ignore next */
-  const [, containerFixture, mainTitle, titleFixture] = match ?? [undefined];
+  const nContainerFixture = normalizeIdentifiers(match?.[1]);
+  const nMainTitle = normalizeIdentifiers(match?.[2]);
+  const nTitleFixture = normalizeIdentifiers(match?.[3]);
 
-  const nContainerFixture = normalizeIdentifiers(containerFixture);
-  const nMainTitle = normalizeIdentifiers(mainTitle);
-  const nTitleFixture = normalizeIdentifiers(titleFixture);
+  const containerProps = (nContainerFixture || undefined)?.split(" ");
+  const title = nMainTitle || undefined;
+  const titleProps = (nTitleFixture || undefined)?.split(" ");
 
-  const containerProps =
-    nContainerFixture && nContainerFixture !== "" ? nContainerFixture.split(" ") : undefined;
-
-  const titleProps =
-    nTitleFixture && nTitleFixture !== "" ? nTitleFixture.split(" ") : undefined;
-
-  return { containerProps, mainTitle: nMainTitle || undefined, titleProps };
+  return { containerProps, title, titleProps };
 }
 
 describe("regex for custom props", () => {
   it("gets custom props 1", () => {
-    const input = "{  details#xxx   .fff.ggg  } Title  My    Spaces { summary   #box }";
+    const input =
+      "{  details#xxx   .fff.ggg@open  } Title  My    Spaces { @data-type=ex summary   #box }";
 
     expect(extractSpecificIdentifiers(input)).toMatchInlineSnapshot(`
       {
@@ -57,9 +54,11 @@ describe("regex for custom props", () => {
           "#xxx",
           ".fff",
           ".ggg",
+          "@open",
         ],
-        "mainTitle": "Title My Spaces",
+        "title": "Title My Spaces",
         "titleProps": [
+          "@data-type=ex",
           "summary",
           "#box",
         ],
@@ -73,7 +72,7 @@ describe("regex for custom props", () => {
     expect(extractSpecificIdentifiers(input)).toMatchInlineSnapshot(`
       {
         "containerProps": undefined,
-        "mainTitle": "Title My Spaces",
+        "title": "Title My Spaces",
         "titleProps": [
           "summary",
           "#box",
@@ -92,7 +91,7 @@ describe("regex for custom props", () => {
           "#xxx",
           ".fff",
         ],
-        "mainTitle": "Title My Spaces",
+        "title": "Title My Spaces",
         "titleProps": undefined,
       }
     `);
@@ -108,7 +107,7 @@ describe("regex for custom props", () => {
           "#xxx",
           ".fff",
         ],
-        "mainTitle": undefined,
+        "title": undefined,
         "titleProps": undefined,
       }
     `);
@@ -124,7 +123,7 @@ describe("regex for custom props", () => {
           "#xxx",
           ".fff",
         ],
-        "mainTitle": undefined,
+        "title": undefined,
         "titleProps": [
           "summary",
           "#box",
@@ -139,7 +138,7 @@ describe("regex for custom props", () => {
     expect(extractSpecificIdentifiers(input)).toMatchInlineSnapshot(`
       {
         "containerProps": undefined,
-        "mainTitle": "Title My Spaces",
+        "title": "Title My Spaces",
         "titleProps": undefined,
       }
     `);
@@ -151,7 +150,7 @@ describe("regex for custom props", () => {
     expect(extractSpecificIdentifiers(input)).toMatchInlineSnapshot(`
       {
         "containerProps": undefined,
-        "mainTitle": "Title My Spaces",
+        "title": "Title My Spaces",
         "titleProps": undefined,
       }
     `);
@@ -163,7 +162,7 @@ describe("regex for custom props", () => {
     expect(extractSpecificIdentifiers(input)).toMatchInlineSnapshot(`
       {
         "containerProps": undefined,
-        "mainTitle": undefined,
+        "title": undefined,
         "titleProps": undefined,
       }
     `);
@@ -175,7 +174,7 @@ describe("regex for custom props", () => {
     expect(extractSpecificIdentifiers(input)).toMatchInlineSnapshot(`
       {
         "containerProps": undefined,
-        "mainTitle": undefined,
+        "title": undefined,
         "titleProps": undefined,
       }
     `);
@@ -187,8 +186,30 @@ describe("regex for custom props", () => {
     expect(extractSpecificIdentifiers(input)).toMatchInlineSnapshot(`
       {
         "containerProps": undefined,
-        "mainTitle": undefined,
+        "title": undefined,
         "titleProps": undefined,
+      }
+    `);
+  });
+
+  it("gets custom props 11", () => {
+    const input = "{section@open.someclass} Title {@a@b#id@data-type=xxx span}";
+
+    expect(extractSpecificIdentifiers(input)).toMatchInlineSnapshot(`
+      {
+        "containerProps": [
+          "section",
+          "@open",
+          ".someclass",
+        ],
+        "title": "Title",
+        "titleProps": [
+          "@a",
+          "@b",
+          "#id",
+          "@data-type=xxx",
+          "span",
+        ],
       }
     `);
   });

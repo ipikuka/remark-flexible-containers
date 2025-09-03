@@ -129,6 +129,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       ?.replace(/[{}]/g, "")
       .replace(/\./g, " .")
       .replace(/#/g, " #")
+      .replace(/@/g, " @")
       .replace(/\s+/g, " ")
       .trim();
   }
@@ -165,15 +166,16 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
    */
   function mergeProperties(
     id?: string,
-    classname?: string[],
+    classnames?: string[],
+    attributes?: string[],
     baseProperties?: HPropertiesInput,
   ): HProperties {
     const properties: HProperties = {};
 
     if (id) properties.id = id;
 
-    if (classname?.length) {
-      properties.className = [...classname];
+    if (classnames?.length) {
+      properties.className = [...classnames];
     }
 
     if (baseProperties) {
@@ -183,6 +185,20 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
         if (Array.isArray(v) && (v as unknown[]).length === 0) continue;
         properties[k] = v;
       }
+    }
+
+    // key or key=value array
+    if (attributes?.length) {
+      attributes.forEach((attr) => {
+        const [rawKey, ...rest] = attr.split("=");
+
+        const key = rawKey.trim();
+        if (!key) return; // Ignore empty keys
+
+        const value = rest.length ? rest.join("=").trim() : true; // allow '=' inside value
+
+        properties[key] = value;
+      });
     }
 
     return properties;
@@ -220,11 +236,12 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
         : settings.titleClassName(_type, _title);
 
     // props may contain specific identifiers (tagname, id, classnames) specific to this title node
-    const specificTagName = props?.find((p) => /^[^#.]/.test(p));
+    const specificTagName = props?.find((p) => /^[^#.@]/.test(p));
     const specificId = props?.find((p) => p.startsWith("#"))?.slice(1);
-    const specificClassName = props?.filter((p) => p.startsWith("."))?.map((p) => p.slice(1));
+    const specificClassNames = props?.filter((p) => p.startsWith("."))?.map((p) => p.slice(1));
+    const specificAttributes = props?.filter((p) => p.startsWith("@"))?.map((p) => p.slice(1));
 
-    const mergedClassName = [...titleClassName, ...(specificClassName ?? [])];
+    const mergedClassNames = [...titleClassName, ...(specificClassNames ?? [])];
     const baseProps = settings.titleProperties?.(_type, _title);
 
     return {
@@ -232,7 +249,12 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       children: [{ type: "text", value: mainTitle }],
       data: {
         hName: specificTagName ?? titleTagName,
-        hProperties: mergeProperties(specificId, mergedClassName, baseProps),
+        hProperties: mergeProperties(
+          specificId,
+          mergedClassNames,
+          specificAttributes,
+          baseProps,
+        ),
       },
     };
   };
@@ -261,11 +283,12 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
         : settings.containerClassName(_type, _title);
 
     // props may contain specific identifiers (tagname, id, classnames) specific to this container node
-    const specificTagName = props?.find((p) => /^[^#.]/.test(p));
+    const specificTagName = props?.find((p) => /^[^#.@]/.test(p));
     const specificId = props?.find((p) => p.startsWith("#"))?.slice(1);
-    const specificClassName = props?.filter((p) => p.startsWith("."))?.map((p) => p.slice(1));
+    const specificClassNames = props?.filter((p) => p.startsWith("."))?.map((p) => p.slice(1));
+    const specificAttributes = props?.filter((p) => p.startsWith("@"))?.map((p) => p.slice(1));
 
-    const mergedClassName = [...containerClassName, ...(specificClassName ?? [])];
+    const mergedClassNames = [...containerClassName, ...(specificClassNames ?? [])];
     const baseProps = settings.containerProperties?.(_type, _title);
 
     return {
@@ -273,7 +296,12 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       children,
       data: {
         hName: specificTagName ?? containerTagName,
-        hProperties: mergeProperties(specificId, mergedClassName, baseProps),
+        hProperties: mergeProperties(
+          specificId,
+          mergedClassNames,
+          specificAttributes,
+          baseProps,
+        ),
       },
     };
   };
@@ -293,20 +321,15 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
     const match = input.match(REGEX_CUSTOM);
 
-    /* v8 ignore next */
-    const [, containerFixture, mainTitle, titleFixture] = match ?? [undefined];
+    const nContainerFixture = normalizeIdentifiers(match?.[1]);
+    const nMainTitle = normalizeIdentifiers(match?.[2]);
+    const nTitleFixture = normalizeIdentifiers(match?.[3]);
 
-    const nContainerFixture = normalizeIdentifiers(containerFixture);
-    const nMainTitle = normalizeIdentifiers(mainTitle);
-    const nTitleFixture = normalizeIdentifiers(titleFixture);
+    const containerProps = (nContainerFixture || undefined)?.split(" ");
+    const title = nMainTitle || undefined;
+    const titleProps = (nTitleFixture || undefined)?.split(" ");
 
-    const containerProps =
-      nContainerFixture && nContainerFixture !== "" ? nContainerFixture.split(" ") : undefined;
-
-    const titleProps =
-      nTitleFixture && nTitleFixture !== "" ? nTitleFixture.split(" ") : undefined;
-
-    return { containerProps, title: nMainTitle || undefined, titleProps };
+    return { containerProps, title, titleProps };
   }
 
   /**
