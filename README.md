@@ -21,7 +21,7 @@ This package is a [**unified**][unified] ([**remark**][remark]) plugin **to add 
 - It can add `container` node, with _custom tag name, custom class name and also additional properties_.
 - It can add `title` node inside the container, if the title is provided, with _custom tag name, custom class name and also additional properties_.
 
-**`remark-flexible-containers` supports nested containers.**
+**`remark-flexible-containers`** supports **nested containers.**
 
 ## Installation
 
@@ -41,7 +41,9 @@ yarn add remark-flexible-containers
 
 ### ::: [type] [title]
 
-Say we have the following file, `example.md`, which consists a flexible container. **Each container should be closed with the same colon `:::` at the end. It works also with more colons than tripple colon as well. (4-colon, or 5-colon and more).**
+Say we have the following file, `example.md`, which consists a flexible container. **Each container should be closed with the same length colon `:::` at the end.**
+
+**It works also with more colons than tripple colon as well.** *(4-colon, or 5-colon and more)*
 
 Below, the **container type** is "warning", specified _after the triple colon_ `:::`; and the **container title** is "title".
 
@@ -90,7 +92,7 @@ async function main() {
 ```
 
 Now, running `node example.js` yields:\
-_(The `type` of the container is also added **as a class name** into the `container` node and the `title` node)_
+_(The `type` of the container is also added **as a classname** into the `container` node and the `title` node)_
 
 ```html
 <div class="remark-container warning">
@@ -206,7 +208,7 @@ If you don't provide a title, the default is **Details** for `<summary>` element
 </details>
 ```
 
-If you want `<details>` element is opened, add specific identifer **`{@open}`** (attribute) just after the type `details`.
+If you want `<details>` element is opened, add specific identifer **`{@open}`** attribute just after the type `details`.
 ``` markdown
 ::: details {@open} Title
 <!-- content -->
@@ -813,19 +815,21 @@ some **bold content** without stress
 The identifiers (`tagname`, `id`, `classnames`, `attributes`) **must be inside curly braces**. 
 
 Syntax is very simple.
-+ `tagname` is to be compatible HTML tag name, and may present only once,
-+ `id` is to start with hash **`#`**, and may present only once,
-+ `classnames` are to start with dot **`.`**, and may present many.
-+ `attributes` are to start with at sign **`@`**, and may present many, can be either boolean attribute or key=value attribute.
++ **`tagname`** is to be compatible HTML tag name, and may present only once,
++ **`id`** is to start with hash **`#`**, and may present only once,
++ **`classnames`** are to start with dot **`.`**, and may present many.
++ **`attributes`** are to start with at sign **`@`**, and may present many, can be either `bare` / `boolean` attribute or `key=value` attribute.
 
 There are two groups of identifiers. Each group is optional, may present or not.\
-**The first group of identifiers** _(just after the `type`)_ is for `container` node.\
-**The second group of identifiers** _(just after the `title`)_ is for `title` node.
++ **The first group of identifiers** _(just after the `type`)_ is for `container` node.\
++ **The second group of identifiers** _(just after the `title`)_ is for `title` node.
 
 **Here are some example usages.** *For simplicity, I omitted the container contents and ending syntax, just put the beginning syntax in the examples.* **All are valid usage for specific identifiers.**
 
 > [!TIP]
-> **These identifiers can be placed as all, any three, any two, or just any of them in the desired order, with or without a space between them.** This is why the "flexibility" term comes from. However, make sure that **no character other than a space appears before the at sign (`@`)**, because if you are using a package like `remark-gfm`, it may interpret something like **`{span@open.someclass}`** as an **autolink**. For this reason, **you should insert a space before the at sign `@` if necessary.**
+> **These identifiers can be placed as all, any three, any two, or just any of them in the desired order, with or without a space between them.** This is why the "flexibility" term comes from. 
+>
+> However, make sure that **no character other than a space appears before at sign (`@`)**, because if you are using a package like `remark-gfm`, it may interpret something like **`{span@open.someclass}`** as an **autolink**. For this reason, **you should insert a space before at sign `@` if necessary.**
 
 ```markdown
 ::: info {section#foo.myclass.second-class} Title {span#baz.someclass.other-class}
