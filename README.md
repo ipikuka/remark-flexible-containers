@@ -109,7 +109,7 @@ My paragraph with <strong>bold text</strong>
 :::</p>
 ```
 
-## It is more flexible and powerful
+## It supports specific identifiers
 
 ### ::: [type] [{tagname#id.classname @attr}] [title] [{tagname#id.classname @attr=value}]
 
@@ -128,7 +128,7 @@ As of version `^1.2.0`, the `remark-flexible-containers` supports syntax for spe
 </section>
 ```
 
-For more information, go to [detailed explanation](#support-for-specific-identifiers) placed after the "options" and "examples" section.
+For more information, go to [detailed explanation](#support-for-specific-identifiers).
 
 ## It works with more colons than tripple colon (>=3)
 
@@ -180,7 +180,7 @@ As of version `^1.4.0`, the `remark-flexible-containers` supports nested contain
 
 ## It can produce `<details> <summary>` element
 
-All you have to is that you set a specific type **details**.
+All you have to do is that you set a specific type **details**.
 ``` markdown
 ::: details Title
 <!-- content -->
@@ -227,12 +227,11 @@ If you want `<details>` element is opened, add specific identifer **`{@open}`** 
 All options are **optional** and have **default values**.
 
 ```typescript
-type RestrictedRecord = Record<string, unknown> & { className?: never };
-
+type TitleFunction = (type?: string, title?: string) => string | null | undefined;
 type TagNameFunction = (type?: string, title?: string) => string;
 type ClassNameFunction = (type?: string, title?: string) => string[];
-type PropertyFunction = (type?: string, title?: string) => RestrictedRecord;
-type TitleFunction = (type?: string, title?: string) => string | null | undefined;
+type PropertyFunction = (type?: string, title?: string) => HPropertiesInput;
+type HPropertiesInput = Record<string, unknown> & { className?: never };
 
 use(remarkFlexibleContainers, {
   containerTagName?: string | TagNameFunction; // default is "div"
@@ -820,8 +819,8 @@ Syntax is very simple.
 + **`classnames`** are to start with dot **`.`**, and may present many.
 + **`attributes`** are to start with at sign **`@`**, and may present many, can be either `bare` / `boolean` attribute or `key=value` attribute.
 
-There are two groups of identifiers. Each group is optional, may present or not.\
-+ **The first group of identifiers** _(just after the `type`)_ is for `container` node.\
+There are two groups of identifiers. Each group is optional, may present or not.
++ **The first group of identifiers** _(just after the `type`)_ is for `container` node.
 + **The second group of identifiers** _(just after the `title`)_ is for `title` node.
 
 **Here are some example usages.** *For simplicity, I omitted the container contents and ending syntax, just put the beginning syntax in the examples.* **All are valid usage for specific identifiers.**
