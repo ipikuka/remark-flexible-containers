@@ -101,7 +101,7 @@ _(The `type` of the container is also added **as a classname** into the `contain
 </div>
 ```
 
-Without `remark-flexible-containers`, you’d get:
+Without **`remark-flexible-containers`**, you’d get:
 
 ```html
 <p>::: warning Title
@@ -113,7 +113,7 @@ My paragraph with <strong>bold text</strong>
 
 ### ::: [type] [{tagname#id.classname @attr}] [title] [{tagname#id.classname @attr=value}]
 
-As of version `^1.2.0`, the `remark-flexible-containers` supports syntax for specific identifiers (`tagname`, `id`, `classnames`, `attributes`) **for individual `container` and `title` node.** For example:
+As of version `^1.2.0`, **`remark-flexible-containers`** supports syntax for specific identifiers (**`tagname`**, **`id`**, **`classnames`**, **`attributes`**) **for both `container` and `title` nodes.** For example:
 
 ``` markdown
 ::: info {section#foo.myclass} Title {span#baz.someclass @disabled}
@@ -132,7 +132,7 @@ For more information, go to [detailed explanation](#support-for-specific-identif
 
 ## It works with more colons than tripple colon (>=3)
 
-As of version `^1.4.0`, the `remark-flexible-containers` works with more colons (4-colon or 5-colon and more). **It requires just the length of the colons is identical at the opening and closing.**
+As of version `^1.4.0`, **`remark-flexible-containers`** works with more colons (4-colon or 5-colon and more) as well. **It requires just the length of the colons is identical at the opening and closing.**
 
 ``` markdown
 :::: info Title
@@ -148,7 +148,7 @@ As of version `^1.4.0`, the `remark-flexible-containers` works with more colons 
 
 ## It supports nested containers
 
-As of version `^1.4.0`, the `remark-flexible-containers` supports nested containers. **It requires just more colons at the outer than the inner.**
+As of version `^1.4.0`, **`remark-flexible-containers`** supports nested containers. **It requires just more colons at the outer than the inner.**
 
 ``` markdown
 ::::: outer
@@ -399,7 +399,7 @@ Now, the container nodes which have a type and a title will contain `data-type` 
 
 It is a **callback** `(type?: string, title?: string) => string | null | undefined` option to set the title with a callback function.
 
-The `remark-flexible-containers` adds a `title` node normally if a title is provided in markdown.
+**`remark-flexible-containers`** adds a `title` node normally if a title is provided in markdown.
 
 ```markdown
 ::: danger Title
@@ -795,7 +795,7 @@ some **bold content** without stress
 
 ### ::: [type] [{tagname#id.classname @attr}] [title] [{tagname#id.classname @attr=value}]
 
-**`remark-flexible-containers`** supports syntax for specific identifiers (`tagname`, `id`, `classnames`, `attributes`) **for individual `container` and `title` node.** For example:
+**`remark-flexible-containers`** supports syntax for specific identifiers (**`tagname`**, **`id`**, **`classnames`**, **`attributes`**) **for both `container` and `title` nodes.** For example:
 
 ``` markdown
 ::: info {section#foo.myclass @open @data-type=expandable} Title Of Information {span#baz.someclass}
@@ -870,7 +870,7 @@ This plugin works with `unified` version 6+ and `remark` version 7+. It is compa
 
 ## Security
 
-Use of `remark-flexible-containers` does not involve rehype (hast) or user content so there are no openings for cross-site scripting (XSS) attacks.
+Use of **`remark-flexible-containers`** does not involve rehype (hast) or user content so there are no openings for cross-site scripting (XSS) attacks.
 
 ## My Plugins
 
