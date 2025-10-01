@@ -856,6 +856,19 @@ There are two groups of identifiers. Each group is optional, may present or not.
 
 You should consider that **specific identifiers for `title` breaks the option `title: () => null`**, and the title will take place for that individual container.
 
+### A consideration for MDX format
+
+Another consideration is that if the content is **MDX format**, you may need to **escape the opening curly braces**, otherwise mdx parser of your integration may interpret curly braces as a MDX expression.
+```md
+::: info \{#foo} Title \{.someclass}
+<!-- ... -->
+:::
+
+::: details \{@open} Summary Title
+<!-- ... -->
+:::
+```
+
 ## Syntax tree
 
 This plugin only modifies the mdast (markdown abstract syntax tree) as explained.
