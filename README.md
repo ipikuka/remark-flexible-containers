@@ -128,11 +128,17 @@ As of version `^1.2.0`, **`remark-flexible-containers`** supports syntax for spe
 </section>
 ```
 
-For more information, go to [detailed explanation](#support-for-specific-identifiers).
+For more information, go to [detailed explanation](#support-for-specific-identifiers-tag-name-id-classname-attributes).
 
 ## It works with more colons than tripple colon (>=3)
 
 As of version `^1.4.0`, **`remark-flexible-containers`** works with more colons (4-colon or 5-colon and more) as well. **It requires just the length of the colons is identical at the opening and closing.**
+
+``` markdown
+::: info Title
+<!-- content -->
+:::
+```
 
 ``` markdown
 :::: info Title
