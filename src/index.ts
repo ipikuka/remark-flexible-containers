@@ -174,7 +174,9 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
     if (id) properties.id = id;
 
-    if (classnames?.length) {
+    // classic V8 coverage false negative
+    /* v8 ignore next -- @preserve */
+    if (classnames && classnames.length) {
       properties.className = [...classnames];
     }
 
@@ -511,6 +513,8 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     const { children } = node;
     const lastChild = children[children.length - 1];
 
+    // classic V8 coverage false negative
+    /* v8 ignore next -- @preserve */
     if (lastChild.type === "text") {
       if (children.length === 1 && lastChild.value === fence) {
         return "regular";
@@ -533,7 +537,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
   const transformer: Transformer<Root> = (tree) => {
     // if a html node.value ends with a new line and colons >=3 like "\n:::", remove and carry it into a new paragraph
     visit(tree, "html", function (node, index, parent) {
-      /* v8 ignore next */
+      /* v8 ignore next -- @preserve */
       if (!parent || typeof index === "undefined") return;
 
       const match = node.value.match(/\n(:{3,})$/);
@@ -549,7 +553,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
     // main visit
     visit(tree, "paragraph", function (node, index, parent) {
-      /* v8 ignore next */
+      /* v8 ignore next -- @preserve */
       if (!parent || typeof index === "undefined") return;
 
       const fence = getOpeningFence(node);
@@ -609,7 +613,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       if (!closingNode) return;
 
       // just for type predicate
-      /* v8 ignore next */
+      /* v8 ignore next -- @preserve */
       if (!is<Paragraph>(closingNode, "paragraph")) return;
 
       const closingFlag = analyzeClosingNode(closingNode, fence); // mutates the closingNode
