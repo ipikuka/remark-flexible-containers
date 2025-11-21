@@ -11,7 +11,7 @@ export default defineConfig({
         ["json", { file: "coverage.json" }],
         "text",
       ],
-      exclude: ["tests"],
+      exclude: ["tests", "**/*.d.ts"],
       thresholds: {
         lines: 100,
         functions: 100,

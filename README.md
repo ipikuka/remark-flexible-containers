@@ -179,13 +179,13 @@ As of version `^1.4.0`, **`remark-flexible-containers`** supports nested contain
 ```
 
 ``` markdown
-:::: tab-group Tab Group Title
+:::: tab-group Group Title
 
-::: tab First Tab Title
+::: tab First Title
 <!-- content -->
 :::
 
-::: tab Second Tab Title
+::: tab Second Title
 <!-- content -->
 :::
 
@@ -274,7 +274,7 @@ Now, the container tag names will be `section`.
 
 ```html
 <section class="...">
-  <!-- ... -->
+  <!-- content -->
 </section>
 ```
 
@@ -292,20 +292,20 @@ Now, the container tag names will be `div` or `details`. It is a good start for 
 
 ```markdown
 ::: details Title
-<!-- ... -->
+<!-- content -->
 :::
 
 ::: warning Title
-<!-- ... -->
+<!-- content -->
 :::
 ```
 
 ```html
 <details class="...">
-  <!-- ... -->
+  <!-- content -->
 </details>
 <div class="...">
-  <!-- ... -->
+  <!-- content -->
 </div>
 ```
 
@@ -319,13 +319,13 @@ A container node contains also a **secondary class name** representing the **typ
 
 ```markdown
 ::: danger Title
-<!-- ... -->
+<!-- content -->
 :::
 ```
 
 ```html
 <div class="remark-container danger">
-  <!-- ... -->
+  <!-- content -->
 </div>
 ```
 
@@ -339,13 +339,13 @@ Now, the container nodes will have `custom-container` as a className, and the se
 
 ```markdown
 ::: danger Title
-<!-- ... -->
+<!-- content -->
 :::
 ```
 
 ```html
 <div class="custom-container danger">
-  <!-- ... -->
+  <!-- content -->
 </div>
 ```
 
@@ -363,13 +363,13 @@ Now, the container class names **will contain only one class name** like `remark
 
 ```markdown
 :::
-<!-- ... -->
+<!-- content -->
 :::
 ```
 
 ```html
 <div class="remark-container-note">
-  <!-- ... -->
+  <!-- content -->
 </div>
 ```
 
@@ -399,13 +399,13 @@ Now, the container nodes which have a type and a title will contain `data-type` 
 
 ```markdown
 ::: danger Title
-<!-- ... -->
+<!-- content -->
 :::
 ```
 
 ```html
 <div class="remark-container danger" data-type="danger" data-title="Title">
-  <!-- ... -->
+  <!-- content -->
 </div>
 ```
 
@@ -417,14 +417,14 @@ It is a **callback** `(type?: string, title?: string) => string | null | undefin
 
 ```markdown
 ::: danger Title
-<!-- ... -->
+<!-- content -->
 :::
 ```
 
 ```html
 <div class="remark-container danger">
   <div class="remark-container-title">Title</div>
-  <!-- ... -->
+  <!-- content -->
 </div>
 ```
 
@@ -439,7 +439,7 @@ use(remarkFlexibleContainers, {
 ```html
 <div class="remark-container danger">
   <!-- There will be NO title node -->
-  <!-- ... -->
+  <!-- content -->
 </div>
 ```
 
@@ -457,30 +457,30 @@ use(remarkFlexibleContainers, {
 
 ```markdown
 ::: info Title
-<!-- ... -->
+<!-- content -->
 :::
 
 ::: info
-<!-- ... -->
+<!-- content -->
 :::
 
 :::
-<!-- ... -->
+<!-- content -->
 :::
 ```
 
 ```html
 <div class="remark-container info">
   <div class="remark-container-title info">Title</div>
-  <!-- ... -->
+  <!-- content -->
 </div>
 <div class="remark-container info">
   <div class="remark-container-title info">Info</div>
-  <!-- ... -->
+  <!-- content -->
 </div>
 <div class="remark-container">
   <div class="remark-container-title">Fallback Title</div>
-  <!-- ... -->
+  <!-- content -->
 </div>
 ```
 
@@ -501,7 +501,7 @@ Now, the title tag names will be `span`.
 ```html
 <div class="...">
   <span class="...">Title</span>
-  <!-- ... -->
+  <!-- content -->
 </div>
 ```
 
@@ -522,22 +522,22 @@ Now, the container tag names will be `span` or `summary`. It is a good complemen
 
 ```markdown
 ::: details Title
-<!-- ... -->
+<!-- content -->
 :::
 
 ::: warning Title
-<!-- ... -->
+<!-- content -->
 :::
 ```
 
 ```html
 <details class="...">
   <summary class="...">Title</summary>
-  <!-- ... -->
+  <!-- content -->
 </details>
 <div class="...">
   <span class="...">Title</span>
-  <!-- ... -->
+  <!-- content -->
 </div>
 ```
 
@@ -551,14 +551,14 @@ A title node contains also a **secondary class name** representing the **type** 
 
 ```markdown
 ::: danger Title
-<!-- ... -->
+<!-- content -->
 :::
 ```
 
 ```html
 <div class="...">
   <div class="remark-container-title danger">Title</div>
-  <!-- ... -->
+  <!-- content -->
 </div>
 ```
 
@@ -572,14 +572,14 @@ Now, the title nodes will have `custom-container-title` as a className, and the 
 
 ```markdown
 ::: danger Title
-<!-- ... -->
+<!-- content -->
 :::
 ```
 
 ```html
 <div class="...">
   <div class="custom-container-title danger">Title</div>
-  <!-- ... -->
+  <!-- content -->
 </div>
 ```
 
@@ -597,24 +597,24 @@ Now, the container class names **will contain only one class name** like `contai
 
 ```markdown
 ::: tip Title
-<!-- ... -->
+<!-- content -->
 :::
 
 :::
-<!-- ... -->
+<!-- content -->
 :::
 ```
 
 ```html
 <div class="...">
   <div class="container-title-tip">Title</div>
-  <!-- ... -->
+  <!-- content -->
 </div>
 
 <div class="...">
   <!-- No title node because there is no title in the second container
    and no fallback title with `title` option  -->
-  <!-- ... -->
+  <!-- content -->
 </div>
 ```
 
@@ -643,14 +643,14 @@ Now, the title nodes which have a type will contain `data-type` property.
 
 ```markdown
 ::: danger Title
-<!-- ... -->
+<!-- content -->
 :::
 ```
 
 ```html
 <div class="...">
   <div class="..." data-type="danger">Title</div>
-  <!-- ... -->
+  <!-- content -->
 </div>
 ```
 
@@ -875,11 +875,11 @@ You should consider that **specific identifiers for `title` breaks the option `t
 Another consideration is that if the content is **MDX format**, you may need to **escape the opening curly braces**, otherwise mdx parser of your integration may interpret curly braces as a MDX expression.
 ```md
 ::: info \{#foo} Title \{.someclass}
-<!-- ... -->
+<!-- content -->
 :::
 
 ::: details \{@open} Summary Title
-<!-- ... -->
+<!-- content -->
 :::
 ```
 
