@@ -81,6 +81,8 @@ describe("remark-container", () => {
       },
     ];
 
+    /* eslint-disable vitest/no-conditional-expect */
+
     fixtures.forEach((fixture) => {
       const match = fixture.input.match(REGEX_START);
 
@@ -98,5 +100,7 @@ describe("remark-container", () => {
         expect(title).toBe(fixture.expect?.title);
       }
     });
+
+    /* eslint-enable vitest/no-conditional-expect */
   });
 });
