@@ -1,6 +1,6 @@
 {
   "name": "remark-flexible-containers",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "Remark plugin to add custom containers with customizable properties in markdown",
   "type": "module",
   "main": "./dist/index.js",
