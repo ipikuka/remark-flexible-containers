@@ -11,7 +11,7 @@
     "declarationMap": true,
     "sourceMap": true,
     "inlineSources": true,
-    "outDir": "dist/esm",
+    "outDir": "dist",
     "noImplicitReturns": true
   },
   "include": ["src/**/*"]
