@@ -45,8 +45,10 @@ interface HProperties {
 type TitleFunction = (type?: string, title?: string) => string | null | undefined;
 type TagNameFunction = (type?: string, title?: string) => string;
 type ClassNameFunction = (type?: string, title?: string) => string[];
-type PropertyFunction = (type?: string, title?: string) => HPropertiesInput;
-type HPropertiesInput = Record<string, unknown> & { className?: never };
+type PropertyFunction = (
+  type?: string,
+  title?: string,
+) => Record<string, unknown> & { className?: never };
 
 export type FlexibleContainerOptions = {
   title?: TitleFunction;
@@ -168,7 +170,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     id?: string,
     classnames?: string[],
     attributes?: string[],
-    baseProperties?: HPropertiesInput,
+    baseProperties?: Record<string, unknown> & { className?: never },
   ): HProperties {
     const properties: HProperties = {};
 

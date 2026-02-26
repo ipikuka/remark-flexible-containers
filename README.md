@@ -185,7 +185,7 @@ As of version `^1.4.0`, **`remark-flexible-containers`** supports nested contain
 ```
 
 ``` markdown
-:::: tab-group Group Title
+:::: tab-group Main Title
 
 ::: tab First Title
 <!-- content -->
@@ -250,8 +250,7 @@ All options are **optional** and have **default values**.
 type TitleFunction = (type?: string, title?: string) => string | null | undefined;
 type TagNameFunction = (type?: string, title?: string) => string;
 type ClassNameFunction = (type?: string, title?: string) => string[];
-type PropertyFunction = (type?: string, title?: string) => HPropertiesInput;
-type HPropertiesInput = Record<string, unknown> & { className?: never };
+type PropertyFunction = (type?: string, title?: string) => Record<string, unknown> & { className?: never };
 
 use(remarkFlexibleContainers, {
   containerTagName?: string | TagNameFunction; // default is "div"
