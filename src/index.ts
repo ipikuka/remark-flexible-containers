@@ -12,7 +12,7 @@ import type {
 } from "mdast";
 import { u } from "unist-builder";
 import { findAfter } from "unist-util-find-after";
-import { findAllBetween } from "unist-util-find-between-all";
+import { findBetween } from "unist-util-find-between";
 
 type Prettify<T> = { [K in keyof T]: T[K] } & {};
 type PartiallyRequired<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
@@ -620,11 +620,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
 
       const closingFlag = analyzeClosingNode(closingNode, fence); // mutates the closingNode
 
-      const containerChildren = findAllBetween(
-        parent,
-        openingNode,
-        closingNode,
-      ) as BlockContent[];
+      const containerChildren = findBetween(parent, openingNode, closingNode) as BlockContent[];
 
       if (openingFlag === "mutated") {
         containerChildren.unshift(openingNode);
