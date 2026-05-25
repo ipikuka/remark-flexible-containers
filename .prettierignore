@@ -1,8 +1,9 @@
 .DS_Store
 .vscode
+archive
+coverage
 dist
 node_modules
-coverage
 package-lock.json
-archive
 README.md
+tsconfig.build.tsbuildinfo

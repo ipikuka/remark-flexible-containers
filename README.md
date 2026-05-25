@@ -247,10 +247,14 @@ If you want `<details>` element is opened, add specific identifer **`{@open}`** 
 All options are **optional** and have **default values**.
 
 ```typescript
+interface Properties {
+    [PropertyName: string]: boolean | number | string | null | undefined | Array<string | number>;
+}
+
 type TitleFunction = (type?: string, title?: string) => string | null | undefined;
 type TagNameFunction = (type?: string, title?: string) => string;
 type ClassNameFunction = (type?: string, title?: string) => string[];
-type PropertyFunction = (type?: string, title?: string) => Record<string, unknown> & { className?: never };
+type PropertyFunction = (type?: string, title?: string) => Omit<Properties, 'className'> & { className?: never };
 
 use(remarkFlexibleContainers, {
   containerTagName?: string | TagNameFunction; // default is "div"
