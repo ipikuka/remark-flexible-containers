@@ -5,7 +5,7 @@ import remarkRehype from "remark-rehype";
 import rehypeStringify from "rehype-stringify";
 import type { VFileCompatible, Value } from "vfile";
 
-import plugin, { FlexibleContainerOptions } from "../../src";
+import plugin, { FlexibleContainerOptions } from "../../src/index.js";
 
 const compilerCreator = (options?: FlexibleContainerOptions) =>
   unified()

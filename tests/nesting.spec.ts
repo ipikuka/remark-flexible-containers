@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import dedent from "dedent";
 import * as prettier from "prettier";
 
-import { process } from "../tests/util/index";
-import type { FlexibleContainerOptions } from "../src";
+import { process } from "../tests/util/index.js";
+import type { FlexibleContainerOptions } from "../src/index.js";
 
 describe("supports any fence length >=3", () => {
   it("fails if fence length is mismatched in opening and closing", async () => {

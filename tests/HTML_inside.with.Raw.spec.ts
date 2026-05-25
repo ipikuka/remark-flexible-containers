@@ -8,7 +8,7 @@ import rehypeStringify from "rehype-stringify";
 import dedent from "dedent";
 import type { VFileCompatible } from "vfile";
 
-import plugin from "../src";
+import plugin from "../src/index.js";
 
 const compiler = unified()
   .use(remarkParse)

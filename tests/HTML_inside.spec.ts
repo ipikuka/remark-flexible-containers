@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import dedent from "dedent";
 
-import { process } from "./util/index";
+import { process } from "./util/index.js";
 
 describe("no options - with HTML elements", () => {
   // ******************************************

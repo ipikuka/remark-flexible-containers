@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import dedent from "dedent";
 import * as prettier from "prettier";
 
-import { process } from "./util/index";
+import { process } from "./util/index.js";
 
 describe("special/custom props", () => {
   // ******************************************

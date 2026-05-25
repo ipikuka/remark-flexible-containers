@@ -36,10 +36,9 @@ declare module "mdast" {
   }
 }
 
-interface HProperties {
-  id?: string;
-  className?: string[];
-  [key: string]: unknown;
+// from "hast", but I want to avoid importing that whole package just for this type
+interface Properties {
+    [PropertyName: string]: boolean | number | string | null | undefined | Array<string | number>;
 }
 
 type TitleFunction = (type?: string, title?: string) => string | null | undefined;
@@ -48,7 +47,7 @@ type ClassNameFunction = (type?: string, title?: string) => string[];
 type PropertyFunction = (
   type?: string,
   title?: string,
-) => Record<string, unknown> & { className?: never };
+) => Omit<Properties, 'className'> & { className?: never };
 
 export type FlexibleContainerOptions = {
   title?: TitleFunction;
@@ -170,9 +169,9 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     id?: string,
     classnames?: string[],
     attributes?: string[],
-    baseProperties?: Record<string, unknown> & { className?: never },
-  ): HProperties {
-    const properties: HProperties = {};
+    baseProperties?: ReturnType<PropertyFunction>,
+  ): Properties {
+    const properties: Properties = {};
 
     if (id) properties.id = id;
 

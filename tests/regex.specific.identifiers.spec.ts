@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { REGEX_CUSTOM } from "../src/index";
+
+import { REGEX_CUSTOM } from "../src/index.js";
 
 /**
  *
