@@ -894,7 +894,7 @@ This plugin only modifies the mdast (markdown abstract syntax tree) as explained
 
 ## Types
 
-This package is fully typed with [TypeScript][url-typescript]. The plugin options' type is exported as `FlexibleContainerOptions`.
+This package is fully typed with [TypeScript][url-typescript] and extends MDAST with `Container` type. The plugin options' type is exported as `FlexibleContainerOptions`. The types `Container`, `ContainerData` and `ContainerMeta` are also exported.
 
 ## Compatibility
 

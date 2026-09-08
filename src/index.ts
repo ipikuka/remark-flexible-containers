@@ -17,10 +17,19 @@ import { findBetween } from "unist-util-find-between";
 type Prettify<T> = { [K in keyof T]: T[K] } & {};
 type PartiallyRequired<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface ContainerData extends Data {}
+// MDAST-level metadata for identifiers in case of need to access them in other AST consumers
+export interface ContainerMeta {
+  containerIdentifier?: string;
+  titleIdentifier?: string;
+}
 
-interface Container extends Parent {
+export interface ContainerData extends Data {
+  hName?: string;
+  hProperties?: Properties;
+  containerMeta?: ContainerMeta;
+}
+
+export interface Container extends Parent {
   type: "container";
   children: BlockContent[];
   data?: ContainerData | undefined;
@@ -125,7 +134,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
    * normalize specific identifiers "{section#id.classname}" --> "section #id .classname"
    *
    */
-  function normalizeIdentifiers(input?: string): string | undefined {
+  function normalizeIdentifier(input?: string): string | undefined {
     return input
       ?.replace(/[{}]/g, "")
       .replace(/\./g, " .")
@@ -212,14 +221,14 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
   const constructTitle = (
     type?: string,
     title?: string,
-    props?: string[],
+    titleIdentifier?: string,
   ): Paragraph | undefined => {
     const _type = type?.toLowerCase();
     const _title = title?.replace(/\s+/g, " ");
     const optionTitle = settings.title?.(_type, _title);
 
     // if the option is `title: () => null`, suppress title unless explicit props exist
-    if (!props && optionTitle === null && _type !== "details") return;
+    if (!titleIdentifier && optionTitle === null && _type !== "details") return;
 
     const mainTitle = optionTitle ?? _title ?? (_type === "details" ? "Details" : undefined);
     if (!mainTitle) return;
@@ -239,6 +248,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
         : settings.titleClassName(_type, _title);
 
     // props may contain specific identifiers (tagname, id, classnames) specific to this title node
+    const props = normalizeIdentifier(titleIdentifier)?.split(" ");
     const specificTagName = props?.find((p) => /^[^#.@]/.test(p));
     const specificId = props?.find((p) => p.startsWith("#"))?.slice(1);
     const specificClassNames = props?.filter((p) => p.startsWith("."))?.map((p) => p.slice(1));
@@ -266,7 +276,8 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
     children: BlockContent[],
     type?: string,
     title?: string,
-    props?: string[],
+    containerIdentifier?: string,
+    titleIdentifier?: string,
   ): Container => {
     const _type = type?.toLowerCase();
     const _title = title?.replace(/\s+/g, " ");
@@ -286,6 +297,7 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
         : settings.containerClassName(_type, _title);
 
     // props may contain specific identifiers (tagname, id, classnames) specific to this container node
+    const props = normalizeIdentifier(containerIdentifier)?.split(" ");
     const specificTagName = props?.find((p) => /^[^#.@]/.test(p));
     const specificId = props?.find((p) => p.startsWith("#"))?.slice(1);
     const specificClassNames = props?.filter((p) => p.startsWith("."))?.map((p) => p.slice(1));
@@ -305,9 +317,17 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
           specificAttributes,
           baseProps,
         ),
+        containerMeta: {
+          containerIdentifier,
+          titleIdentifier,
+        },
       },
     };
   };
+  /**
+   * removes the curly braces from the input string, e.g. "{section#foo}" --> "section#foo"
+   */
+  const stripIdentifierBraces = (input?: string): string | undefined => input?.slice(1, -1);
 
   /**
    *
@@ -315,24 +335,20 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
    * ::: type {section#foo} title {span.bar}
    *
    */
-  function extractSpecificIdentifiers(input?: string): {
-    containerProps?: string[];
+  function extractSpecificIdentifiers(rawTitle?: string): {
+    containerIdentifier?: string;
     title?: string;
-    titleProps?: string[];
+    titleIdentifier?: string;
   } {
-    if (!input) return {};
+    if (!rawTitle) return {};
 
-    const match = input.match(REGEX_CUSTOM);
+    const match = rawTitle.match(REGEX_CUSTOM);
 
-    const nContainerFixture = normalizeIdentifiers(match?.[1]);
-    const nMainTitle = normalizeIdentifiers(match?.[2]);
-    const nTitleFixture = normalizeIdentifiers(match?.[3]);
+    const containerIdentifier = stripIdentifierBraces(match?.[1]);
+    const mainTitle = match?.[2]?.replace(/\s+/g, " ").trim();
+    const titleIdentifier = stripIdentifierBraces(match?.[3]);
 
-    const containerProps = (nContainerFixture || undefined)?.split(" ");
-    const title = nMainTitle || undefined;
-    const titleProps = (nTitleFixture || undefined)?.split(" ");
-
-    return { containerProps, title, titleProps };
+    return { containerIdentifier, title: mainTitle, titleIdentifier };
   }
 
   /**
@@ -565,14 +581,14 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
           ? analyzeChild(node, fence) // mutates the node
           : analyzeChildren(node, fence); // mutates the node
 
-      const { containerProps, title, titleProps } = extractSpecificIdentifiers(
+      const { containerIdentifier, title, titleIdentifier } = extractSpecificIdentifiers(
         rawtitle?.trim(),
       );
 
       if (flag === "complete") {
         // means that the container starts and ends within the same paragraph node
 
-        const titleNode = constructTitle(type, title, titleProps);
+        const titleNode = constructTitle(type, title, titleIdentifier);
 
         removeFirstBreakInPlace(node); // mutates the node
 
@@ -588,7 +604,8 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
           containerChildren,
           type,
           title,
-          containerProps,
+          containerIdentifier,
+          titleIdentifier,
         );
 
         // place it the place of the current paragraph node
@@ -633,11 +650,17 @@ export const plugin: Plugin<[FlexibleContainerOptions?], Root> = (options) => {
       if (!containerChildren.length && !type) return;
 
       // if there is no content but type, then continue to construct the container
-      const titleNode = constructTitle(type, title, titleProps);
+      const titleNode = constructTitle(type, title, titleIdentifier);
 
       if (titleNode) containerChildren.splice(0, 0, titleNode);
 
-      const containerNode = constructContainer(containerChildren, type, title, containerProps);
+      const containerNode = constructContainer(
+        containerChildren,
+        type,
+        title,
+        containerIdentifier,
+        titleIdentifier,
+      );
 
       const { children } = parent;
       const openingIndex = children.indexOf(openingNode);

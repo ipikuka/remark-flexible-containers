@@ -109,7 +109,7 @@ describe("special/custom props", () => {
   // ******************************************
   it("supports attributes", async () => {
     const input = dedent`
-      ::: details {@open} Title
+      ::: details {@open} Title #1.5
       content
       :::
     `;
@@ -119,7 +119,7 @@ describe("special/custom props", () => {
 
     expect(formatted_output).toMatchInlineSnapshot(`
       "<details class="remark-details" open>
-        <summary class="remark-summary">Title</summary>
+        <summary class="remark-summary">Title #1.5</summary>
         <p>content</p>
       </details>
       "
@@ -130,7 +130,7 @@ describe("special/custom props", () => {
   it("supports multiple attributes", async () => {
     // putting a space before @open is necerray here otherwise remark-gfm interpret is autolink
     const input = dedent`
-      ::: info {section.myclass @open.someclass} Title {span@disabled#id@data-type=expandable}
+      ::: info {section.myclass @open.someclass} Title V1.2 {span@disabled#id@data-type=expandable}
       content
       :::
     `;
@@ -146,7 +146,7 @@ describe("special/custom props", () => {
           disabled
           data-type="expandable"
         >
-          Title
+          Title V1.2
         </span>
         <p>content</p>
       </section>
